@@ -18,7 +18,7 @@ function hints(){document.querySelectorAll('#tabs a').forEach(a=>{const t=TABS.f
 
 /* ---------- INTRO FILM ---------- */
 function intro(done){
- if(SS.getItem('nl_intro')||Q.get('intro')==='0'||cbType){done();return;}
+ if(SS.getItem('nl_intro')||Q.get('intro')==='0'||cbErr||hash.get('access_token')){done();return;}
  lock(true);
  const pts=Array.from({length:40},(_,i)=>`${i*36},${200+Math.sin(i*.7)*60+Math.cos(i*1.9)*40-i*2}`).join(' ');
  const neur=Array.from({length:26},()=>`<i style="left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${(Math.random()*3).toFixed(2)}s"></i>`).join('');
