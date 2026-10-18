@@ -67,10 +67,10 @@ function login(done){
  const msg=(t,c='')=>{const m=el.querySelector('#lgMsg');m.textContent=t;m.className='lg-msg '+c;};
  if(cbErr)msg(/expired|invalid/i.test(cbErr)?'That link expired or was already used. Request a new one.':cbErr,'err');
  el.querySelector('#lgForm').onsubmit=async e=>{e.preventDefault();const email=el.querySelector('#lgEmail').value.trim();msg('Sending…');
-  try{const r=await fetch(AU+'/otp',{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({email,create_user:false,options:{emailRedirectTo:location.origin+'/'}})});
+  try{const r=await fetch(AU+'/otp?redirect_to='+encodeURIComponent(location.origin+'/'),{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({email,create_user:false})});
    if(r.ok){msg('Check your inbox: the sign-in link opens the OS on this device.','ok');return;}
    const j=await r.json().catch(()=>({}));const t=(j.msg||j.error_description||j.message||'')+'';
-   msg(/signup|not allowed|not found|otp_disabled|user/i.test(t)||r.status===422||r.status===400?PENDING:/rate|seconds/i.test(t)||r.status===429?'Too many requests. Wait a minute, then try again.':(t||'Could not send the link'),'err');
+   msg(/signup|not allowed|not found|otp_disabled|user/i.test(t)||r.status===422||r.status===400?PENDING:/rate|seconds/i.test(t)||r.status===429?'Email limit reached: Supabase\'s free mailer sends only a few emails per hour. A link may already be in your inbox (check spam); use the newest one, or try again in about an hour.':(t||'Could not send the link'),'err');
   }catch{msg('Network error, try again','err');}};
  setTimeout(()=>el.querySelector('#lgEmail').focus(),200);
 }
