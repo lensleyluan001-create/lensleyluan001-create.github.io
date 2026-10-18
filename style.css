@@ -121,3 +121,8 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 .k-trade{color:var(--a)}.k-death{color:var(--r)}.k-trusted{color:var(--g)}.k-retired{color:#ff8aa0}.k-tick{color:var(--d)}
 .br-tick{overflow:hidden;border-top:1px solid var(--ln);border-bottom:1px solid var(--ln);margin-top:12px;white-space:nowrap;font-size:11px}
 .br-tick-in{display:inline-block;animation:brt 60s linear infinite;padding:4px 0}.br-tick-in span{margin-right:28px}@keyframes brt{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* brain interactive map */
+#brNet{touch-action:none}.br-tip{position:absolute;z-index:3;max-width:min(340px,80%);background:rgba(4,12,9,.94);border:1px solid rgba(57,255,136,.45);box-shadow:0 0 18px rgba(57,255,136,.18);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;pointer-events:none}
+.br-tip table{border-collapse:collapse;margin:4px 0;width:100%}.br-tip td{padding:1px 6px 1px 0}.br-tip td:last-child{text-align:right}.br-tf{margin:4px 0;border-top:1px solid rgba(57,255,136,.15);padding-top:4px}.br-tg{margin:2px 0}
+.br-ctl{position:absolute;right:10px;bottom:8px;display:flex;gap:6px;align-items:center;font-size:11px;z-index:2}.br-ctl button{font:inherit;font-family:var(--mono,ui-monospace,monospace);letter-spacing:.12em;background:rgba(3,6,5,.75);color:#39ff88;border:1px solid rgba(57,255,136,.4);border-radius:6px;padding:3px 8px;cursor:pointer}.br-ctl button:hover,.br-ctl button.on{background:rgba(57,255,136,.15)}
+@media (max-width:600px){#brHint{display:none}}
