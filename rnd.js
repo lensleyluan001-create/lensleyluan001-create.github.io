@@ -12,7 +12,7 @@ export async function show(){const box=$('#rnd');if(!box.dataset.init){box.datas
  if(Date.now()-loadedAt>60000){loadedAt=Date.now();try{ST=await (await fetch('/api/state',{cache:'no-store'})).json();}catch{ST=null;}
   try{LABS=await (await fetch('/api/lab?key=summary')).json();}catch{LABS=null;}
   try{const r=await fetch('/api/lab?key=inbox_status');INB=r.ok?await r.json():null;}catch{INB=null;}
-  try{const r=await fetch('/api/lab?key=squad');SQD=r.ok?await r.json():null;}catch{SQD=null;}
+  try{SQD=await (await import('/squad.js')).loadSquad();}catch{SQD=null;}
   await cloudLoad();render();}}
 const tokn=()=>{try{const t=JSON.parse(localStorage.getItem('nl_auth')||'null');return t&&t.mode==='supabase'&&t.exp>Date.now()/1000+30?t.token:null}catch{return null}};
 async function sb(path,o={}){const s=window.NL_SB,t=tokn();if(!s||!t)throw new Error('not signed in');const r=await fetch(s.url+'/rest/v1/'+path,{...o,cache:'no-store',headers:{apikey:s.key,authorization:'Bearer '+t,'content-type':'application/json',...(o.headers||{})}});if(!r.ok)throw new Error(path.split('?')[0]+' table '+(r.status===404?'not set up yet':'HTTP '+r.status));const x=await r.text();return x?JSON.parse(x):null;}
