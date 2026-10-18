@@ -150,14 +150,14 @@ function render(){const d=S.d,P=d.pulse.pairs;const h=d.health;$('#down').classL
 function clock(){$('#clock').textContent=new Date(Date.now()+SAST*1000).toISOString().slice(11,19)+' SAST';const a=S.lastOk?Math.round((Date.now()-S.lastOk)/1000):null,b=$('#badge'),st=a==null||a>300?'off':a>60?'stale':'live';
  b.className='badge '+st;b.textContent=st==='live'?'● LIVE · Kraken':st==='stale'?'● STALE':'● OFFLINE';$('#age').textContent=a==null?'':`${a}s old`;}
 function go(t){S.tab=t;document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.dataset.t===t));document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('hidden',s.id!=='t-'+t));
- history.replaceState(null,'',(t==='overview'?'/':'/'+t)+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};if(t==='charts')charts(true);if(['markets','proof','trade','engine','builder'].includes(t))loadOS().then(m=>m.show(t));if(t==='brain')import('/brain.js').then(m=>m.show());if(t==='rnd')import('/rnd.js').then(m=>m.show());if(t==='markets')S.idxAt=0;if(S.d){render();if(t==='markets')tick();}}
+ history.replaceState(null,'',(t==='overview'?'/':'/'+t)+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};if(t==='charts')charts(true);if(['markets','proof','trade','engine','builder'].includes(t))loadOS().then(m=>m.show(t));if(t==='brain')import('/brain.js').then(m=>m.show());if(t==='rnd')import('/rnd.js').then(m=>m.show());if(t==='office')import('/office.js').then(m=>m.show());if(t==='markets')S.idxAt=0;if(S.d){render();if(t==='markets')tick();}}
 $('#tabs').onclick=e=>{const t=e.target.dataset.t;if(t)go(t);};
 $('#help').onclick=()=>$('#guide').showModal();$('#gclose').onclick=()=>{$('#guide').close();localStorage.setItem('nl_seen','1');};
 $('#snd').onclick=()=>{S.sound=!S.sound;$('#snd').textContent=S.sound?'🔊 Sound on':'🔇 Sound off';beep(520);};
 $('#notify').onclick=async()=>{if(!('Notification'in window))return toast('Notifications not supported here. In-page alerts stay on.');S.notify=(await Notification.requestPermission())==='granted';toast(S.notify?'🔔 Alerts on (paper signals only)':'Notifications blocked. In-page alerts stay on.');};
 function toast(t){const e=document.createElement('div');e.className='toast';e.innerHTML=t;$('#toasts').appendChild(e);setTimeout(()=>e.remove(),8000);}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
-window.S=S;window.go=go;const start=location.pathname.replace(/\//g,'')||'overview';go(['overview','engine','charts','bot','markets','proof','trade','builder','brain','rnd'].includes(start)?start:'overview');
+window.S=S;window.go=go;const start=location.pathname.replace(/\//g,'')||'overview';go(['overview','engine','charts','bot','markets','proof','trade','builder','brain','rnd','office'].includes(start)?start:'overview');
 if(!localStorage.getItem('nl_seen')&&!Q.has('noguide')&&!DEMO)setTimeout(()=>$('#guide').showModal(),1200);
 clock();setInterval(clock,1000);tick();setInterval(tick,30000);setInterval(()=>{if(S.tab==='charts'&&!document.hidden)charts(false);},20000);
 if(Q.get('events')){let i=0;const ev=[['XBTUSD','🟢','DEMO: bot opened paper BTC'],['XBTUSD','🏆','DEMO: take-profit on BTC'],['ETHUSD','🟥','DEMO: stop-loss on ETH'],['SOLUSD','💨','DEMO: bot closed SOL (trend_flip)']];setInterval(()=>{if(S.d){const e=ev[i++%ev.length];event(...e);}},2500);}
