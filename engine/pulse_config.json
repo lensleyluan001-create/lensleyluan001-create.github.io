@@ -1,0 +1,105 @@
+{
+ "engine_version": "pulse-1.0.0",
+ "pairs": {
+  "XBTUSD": {
+   "label": "BTC/USD",
+   "ticker_key": "XXBTZUSD"
+  },
+  "ETHUSD": {
+   "label": "ETH/USD",
+   "ticker_key": "XETHZUSD"
+  },
+  "SOLUSD": {
+   "label": "SOL/USD",
+   "ticker_key": "SOLUSD"
+  },
+  "XRPUSD": {
+   "label": "XRP/USD",
+   "ticker_key": "XXRPZUSD"
+  },
+  "ADAUSD": {
+   "label": "ADA/USD",
+   "ticker_key": "ADAUSD"
+  },
+  "XDGUSD": {
+   "label": "DOGE/USD",
+   "ticker_key": "XDGUSD"
+  },
+  "LINKUSD": {
+   "label": "LINK/USD",
+   "ticker_key": "LINKUSD"
+  },
+  "AVAXUSD": {
+   "label": "AVAX/USD",
+   "ticker_key": "AVAXUSD"
+  },
+  "LTCUSD": {
+   "label": "LTC/USD",
+   "ticker_key": "XLTCZUSD"
+  },
+  "DOTUSD": {
+   "label": "DOT/USD",
+   "ticker_key": "DOTUSD"
+  }
+ },
+ "data": {
+  "tf_fast": 15,
+  "tf_slow": 60,
+  "depth_levels": 25,
+  "drop_forming_bar": true
+ },
+ "indicators": {
+  "ema_fast": 20,
+  "ema_slow": 50,
+  "ema_loc": 20,
+  "rsi_len": 14,
+  "atr_len": 14,
+  "roc_bars_slow": 6,
+  "vol_avg_bars": 20
+ },
+ "normalise": {
+  "trend_gap_full": 0.01,
+  "rsi_mid": 50,
+  "rsi_span": 20,
+  "roc_full": 0.02,
+  "mom_w_rsi": 0.5,
+  "mom_w_roc": 0.5
+ },
+ "layers": {
+  "bias_min": 0.15,
+  "mom_min": 0.1,
+  "rsi_long_max": 72,
+  "rsi_short_min": 28,
+  "flow_imb_min": -0.15,
+  "vol_ratio_min": 0.3,
+  "atr_pct_min": 0.06,
+  "atr_pct_max": 1.5,
+  "spread_bps_max": 10
+ },
+ "weights": {
+  "trend": 0.3,
+  "momentum": 0.25,
+  "location": 0.15,
+  "book": 0.15,
+  "volatility": 0.1,
+  "spread": 0.05
+ },
+ "no_direction_factor": 0.5,
+ "regime": {
+  "trend_up": 0.3,
+  "trend_down": -0.3,
+  "high_vol_atr_pct": 1.5,
+  "dead_atr_pct": 0.06
+ },
+ "verdict": {
+  "take_min": 70,
+  "watch_min": 55,
+  "take_requires_all_layers": true
+ },
+ "bias_label_min": 0.15,
+ "levels": {
+  "stop_atr": 1.5,
+  "t1_atr": 2.25
+ },
+ "hash": "cb3ed0d29ecbe129"
+}

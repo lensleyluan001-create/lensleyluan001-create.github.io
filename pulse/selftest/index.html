@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NORTHLINE Pulse selftest</title><link rel="stylesheet" href="/style.css"></head><body><div class="scan"></div>
+<main><div class="logo">NORTHLINE ▲ PULSE · SELFTEST</div><p class="dim">App engine (live, /api/pulse) vs the bot's last logged pulse (30-min tick, from state.json). Same engine file → same hash. Scores differ only by snapshot time.</p>
+<div class="panel" id="out">loading…</div><p class="dim small"><a href="/" style="color:#39ff88">← desk</a> · PAPER ONLY</p></main>
+<script>
+const sast=t=>new Date((t+7200)*1000).toISOString().slice(0,19).replace('T',' ')+' SAST';
+(async()=>{const a=await (await fetch('/api/pulse',{cache:'no-store'})).json();let s=null;try{const r=await fetch('/api/state',{cache:'no-store'});if(r.ok)s=await r.json();}catch(e){}
+const b=s&&s.last_bot_pulse;const same=s&&s.engine&&s.engine.hash===a.engine_hash;
+let h=`<div class="kpis"><div class="kpi"><div class="l">APP ENGINE</div><div class="v small">${a.engine_version} #${a.engine_hash}</div></div><div class="kpi"><div class="l">BOT ENGINE</div><div class="v small">${s&&s.engine?s.engine.version+' #'+s.engine.hash:'—'}</div><div class="${same?'up':'dn'} small">${s?(same?'✓ identical engine':'✗ MISMATCH'):'no bot state'}</div></div>
+<div class="kpi"><div class="l">APP SNAPSHOT</div><div class="v small">${sast(a.fetched_at)}</div></div><div class="kpi"><div class="l">BOT SNAPSHOT</div><div class="v small">${b?b.time_sast+' SAST':'—'}</div></div></div>
+<table><tr><th>PAIR</th><th>APP SCORE</th><th>APP VERDICT</th><th>BOT SCORE</th><th>BOT VERDICT</th><th>Δ</th><th>LAYERS (app)</th></tr>`;
+for(const[p,u] of Object.entries(a.pairs||{})){const bs=b&&b.scores[p];h+=`<tr><td>${u.label}</td><td>${u.score}</td><td>${u.verdict}</td><td>${bs??'—'}</td><td>${b?b.verdicts[p]:'—'}</td><td>${bs!=null?(u.score-bs).toFixed(1):'—'}</td><td>${Object.entries(u.layers).map(([k,v])=>(v?'✓':'✗')+k).join(' ')}</td></tr>`}
+h+=`</table><pre class="small dim" style="white-space:pre-wrap">${JSON.stringify(a.pairs,null,1)}</pre>`;document.getElementById('out').innerHTML=h;})();
+</script></body></html>

@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NORTHLINE ▲ SUPER TRADING OS · paper</title><meta name="theme-color" content="#030605">
+<meta name="description" content="NORTHLINE Pulse: live Kraken crypto engine shared 1:1 with the paper bot. PAPER ONLY.">
+<script type="importmap">{"imports":{"node:crypto":"/shell/crypto-shim.js"}}</script><script src="/shell/static-api.js"></script><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/shell/theme.css"></head><body>
+<div class="scan"></div><div id="toasts"></div>
+<div id="down" class="down hidden"></div><div id="demo" class="demo hidden"></div>
+<header class="top">
+ <div class="logo">NORTHLINE <b>▲</b> SUPER OS</div>
+ <div class="hdr"><span id="badge" class="badge off">● CONNECTING</span><span id="age" class="dim">—</span><span class="paper-tag">PAPER · NO LIVE MONEY</span><span id="clock" class="dim">--:--:-- SAST</span>
+ <button id="cur" class="ibtn wide">USD</button><button id="help" class="ibtn" aria-label="Guide">?</button></div>
+</header>
+<nav class="tabsbar" id="tabs"><a data-t="overview">Overview</a><a data-t="engine">Engine</a><a data-t="charts">Charts</a><a data-t="markets">Markets &amp; Lab</a><a data-t="bot">Bot</a><a data-t="proof">Proof</a><a data-t="trade">Trade Desk</a><a data-t="builder">Builder</a><a data-t="brain">🧠 Brain</a></nav>
+<section id="strip" class="strip"><div class="sk">Loading live market…</div></section>
+<main>
+ <section id="t-overview" class="tab"><div id="cards" class="cards"></div>
+  <details class="adv"><summary>Advanced: raw numbers per coin</summary><div id="raw" class="tw"></div></details></section>
+ <section id="t-engine" class="tab hidden">
+  <div class="eng-top"><div class="seg" id="engSel"></div><button id="snd" class="ibtn wide">🔇 Sound off</button><button id="notify" class="ibtn wide">🔔 Alerts</button></div>
+  <div id="engWrap"></div>
+  <div id="learn"></div><div class="panel"><div class="ph"><b>ENGINE EVENT FEED</b><span class="dim small">threshold crossings · verdict changes · bot paper trades</span></div><ol id="feed" class="feed"><li class="dim">Listening…</li></ol></div>
+ </section>
+ <section id="t-charts" class="tab hidden"><div class="panel"><div class="ph"><div class="seg" id="pairTabs"></div><div class="seg" id="tfTabs"><button data-tf="15" class="on">15m</button><button data-tf="60">1h</button></div><span class="dim small" id="chartInfo"></span></div>
+  <div id="chart" class="chart"><div class="sk">Loading chart…</div></div><div class="legend"><span class="lg ema1">EMA20</span><span class="lg ema2">EMA50</span><span class="lg mk">▲▼ bot paper fills</span><span class="lg sl">- - engine stop / target</span></div></div>
+  <div class="panel"><div class="ph"><b>ORDER BOOK</b><span class="dim small" id="depthInfo"></span></div><canvas id="depth" class="depth"></canvas><div class="ob" id="ob"></div></div>
+  <div class="panel"><div class="ph"><b>PULSE HISTORY</b><span class="dim small">score over time · 70 = engine TAKE line</span></div><div id="hist" class="hist"></div></div></section>
+ <section id="t-proof" class="tab hidden"><div id="proof"><div class="sk">Loading proof…</div></div></section>
+ <section id="t-trade" class="tab hidden"><div id="trade"><div class="sk">Loading trade desk…</div></div></section>
+ <section id="t-bot" class="tab hidden"><div id="bot"></div></section>
+ <section id="t-builder" class="tab hidden"><div id="builder"></div></section>
+ <section id="t-brain" class="tab hidden"><div id="brain"></div></section>
+ <section id="t-markets" class="tab hidden"><div id="lab"></div><div class="panel"><div class="ph"><b>INDICES &amp; GOLD</b><span class="delayed">DELAYED · NOT LIVE</span></div><div id="idx" class="idx"><div class="sk">Loading delayed quotes…</div></div>
+  <p class="dim small">Reference only. The pulse engine only scores the three live Kraken coins.</p></div></section>
+</main>
+<div class="tape"><div id="tape" class="tape-in"></div></div>
+<footer class="foot">Crypto: Kraken public data, scored by the same engine file the bot runs (<span id="eng">engine —</span>). Indices/gold delayed. PAPER ONLY. No broker, no orders, no live money. Not financial advice. <a href="/pulse/selftest/">Selftest</a> · <a href="/api/health">Health</a></footer>
+<dialog id="guide"><h2>How to read NORTHLINE in 30 seconds</h2><ol>
+<li><b>Top strip:</b> what the paper bot is doing right now and what would make it buy.</li>
+<li><b>Pulse score (0–100):</b> how strongly the market lines up for a buy. Under 55 means wait, 55–69 means watch, and 70+ with all six checks green means <b>TAKE</b>.</li>
+<li><b>Six checks:</b> tap any chip to see what it means in plain words. The bot only buys when all six are green.</li>
+<li><b>Engine tab:</b> the same score as a living engine. Blue idle means waiting, amber revving means getting close, green redline means TAKE. Pistons misfire for the checks that fail.</li>
+<li><b>Bot tab:</b> the paper account (start capital set in the bot config, now $1,000), its trades and every version that has "died" and rebuilt.</li>
+<li>Everything is <b>paper money</b>. Nothing here can place a real trade.</li></ol><button id="gclose" class="ibtn wide">Got it</button></dialog>
+<div id="tip" class="tip hidden"></div>
+<form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden><input name="bot-field"><input name="page"><textarea name="message"></textarea></form>
+<script src="/app.js" defer></script><script src="/shell/shell.js" defer></script></body></html>
