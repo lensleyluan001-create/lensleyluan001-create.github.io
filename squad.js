@@ -2,8 +2,10 @@
 // Fetched once per tab visit at most every 60 s; no polling.
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let C=null,at=0,inflight=null;
+export let FW=null;   // fwd5m sub-loop row (lab symbol squad_fwd5m), published by fwd5m.py
+export function fwdInfo(id){if(!FW||!FW.updated_sast)return null;const age=(Date.now()-ts2ms(FW.updated_sast))/60e3,b=FW.bots?.[id];return{alive:age<15,last:String(FW.updated_sast).slice(11,16),age:Math.round(age),b};}
 export async function loadSquad(){if(at&&Date.now()-at<60000)return C;if(inflight)return inflight;
- inflight=(async()=>{try{const r=await fetch('/api/lab?key=squad');const j=r.ok?await r.json():null;C=j&&Array.isArray(j.bots)?j:null;}catch{C=null;}at=Date.now();inflight=null;return C;})();return inflight;}
+ inflight=(async()=>{try{const f=await fetch('/api/lab?key=squad_fwd5m');FW=f.ok?await f.json():null;if(FW&&FW.error)FW=null;}catch{FW=null;}try{const r=await fetch('/api/lab?key=squad');const j=r.ok?await r.json():null;C=j&&Array.isArray(j.bots)?j:null;}catch{C=null;}at=Date.now();inflight=null;return C;})();return inflight;}
 const ts2ms=t=>t?Date.parse(String(t).replace(' ','T').slice(0,16)+':00+02:00'):0,$m=v=>v==null?'—':'$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 export function botView(q,b){const st=q.stats||{},S0=q.start||1000,DL=q.death_line||500,eq=b.equity??b.cash,dth=(q.deaths||[]).filter(x=>(x.bot||x.id)===b.id),deaths=Math.max(dth.length,(b.life||1)-1),
  recent=dth.find(x=>Date.now()-ts2ms(x.time_sast)<6*3600e3),open=b.open||[],n=(b.strats||[]).reduce((a,x)=>a+(st[x.id]?.n||0),0);
@@ -14,12 +16,41 @@ export async function showBots(sel='#botSquad'){const el=document.querySelector(
  if(!q){el.innerHTML=`<div class="panel bs"><div class="row"><span class="ban">■ PAPER SQUAD</span></div><div class="dim small">No squad data published yet (lab row 'squad' missing, or you are not signed in). Nothing is shown rather than made up.</div></div>`;return;}
  const V=q.bots.map(b=>[b,botView(q,b)]),tot=V.reduce((a,[,v])=>a+v.eq,0),S0=q.start||1000;
  el.innerHTML=`<div class="panel bs"><div class="row"><span class="ban">■ PAPER SQUAD · ${esc(q.bots.map(b=>b.id).join(' '))} · NO LIVE MONEY</span><span class="dim small">updated ${esc(q.updated_sast||'—')} SAST · <a href="/rnd" data-go="rnd">details in R&amp;D →</a></span></div>
- <p class="dim small">${V.length} PAPER bots trading unproven strategies on purpose (pinned bots keep their strategy; S7 trades confirmed news alerts), beside the v5 bot above. Forward evidence only: nothing here sets the v5 bot's rules, sizing or risk. Squad equity ${$m(tot)} of ${$m(S0*V.length)}.</p>
- <div class="bs-g">${V.map(([b,v])=>`<details class="bs-c"><summary><div class="bs-h"><b>${esc(b.id)}</b><span class="bs-p">PAPER</span>${b.pinned?'<span class="bs-p" style="color:#ffd23f;border-color:#ffd23f">PINNED</span>':''}${b.kind?`<span class="bs-p">${esc(b.kind)}</span>`:''}<span class="small ${v.status[0]}">${esc(v.status[1])}</span></div>
-  <div class="bs-v">${$m(v.eq)}</div><div class="small ${v.ch>0?'up':v.ch<0?'dn':'dim'}">${v.ch>=0?'+':'−'}${$m(Math.abs(v.ch))} · life ${b.life||1} · ${v.deaths} death${v.deaths===1?'':'s'}</div>
+ <p class="dim small">${V.length} PAPER bots trading unproven strategies on purpose ${(()=>{const P=V.filter(([b])=>b.pinned).map(([b])=>b.id),K=V.filter(([b])=>b.kind).map(([b])=>b.id+' '+b.kind);return [P.length?'pinned: '+esc(P.join(' ')):'',K.length?esc(K.join(', ')):''].filter(Boolean).map(x=>'('+x+')').join(' ');})()}, beside the v5 bot above. Forward evidence only: nothing here sets the v5 bot's rules, sizing or risk. Squad equity ${$m(tot)} of ${$m(S0*V.length)}.</p>
+ ${(()=>{const mm=mainMeta(window.S?.d);return grouped(q).map(g=>{if(g.k==='main')return `<div class="bs-grp" style="--gc:#${g.col.toString(16).padStart(6,'0')}"><b>${g.name}</b><span class="dim small">${esc(g.desc)}</span></div><div class="bs-g"><div class="bs-c bs-main"><div class="bs-h"><b>v5</b><span class="bs-p">PAPER</span></div>${mm?`<div class="small bs-m">${esc(mm.markets)} · ${esc(mm.tf)} · <b>${esc(mm.status)}</b></div><div class="bs-v">${$m(mm.eq)}</div><div class="dim small">${mm.open.length} open · full card above</div>`:'<div class="dim small">building: open the Overview once so the bot state is loaded</div>'}</div></div>`;if(!g.bots.length)return '';return `<div class="bs-grp" style="--gc:#${g.col.toString(16).padStart(6,'0')}"><b>${g.name}</b><span class="dim small">${esc(g.desc)}</span></div><div class="bs-g">${g.bots.map(b=>[b,botView(q,b)]).map(([b,v])=>`<details class="bs-c"><summary><div class="bs-h"><b>${esc(b.id)}</b><span class="bs-p">PAPER</span>${b.pinned?'<span class="bs-p" style="color:#ffd23f;border-color:#ffd23f">PINNED</span>':''}${b.kind?`<span class="bs-p">${esc(b.kind)}</span>`:''}<span class="small ${v.status[0]}">${esc(v.status[1])}</span></div>
+  <div class="small bs-m">${(m=>`${esc(m.markets)} · ${esc(m.tf)} · <b>${esc(m.status)}</b>${m.win?` · next window <b>${esc(m.win)}</b>`:''}${m.extra?` · <span class="a">${esc(m.extra)}</span>`:''}`)(botMeta(b))}</div><div class="bs-v">${$m(v.eq)}</div><div class="small ${v.ch>0?'up':v.ch<0?'dn':'dim'}">${v.ch>=0?'+':'−'}${$m(Math.abs(v.ch))} · life ${b.life||1} · ${v.deaths} death${v.deaths===1?'':'s'}</div>
   <div class="bs-bar"><i style="width:${Math.max(2,Math.min(100,v.eq/(S0*1.5)*100))}%;background:${v.eq<v.DL*1.2?'#ff3b5c':v.eq<S0?'#ffb347':'#39ff88'}"></i><em style="left:${v.DL/(S0*1.5)*100}%"></em></div>
   <div class="dim small">${(b.strats||[]).length} strategies · ${v.open.length} open · ${v.n?v.n+' closed':'no trades yet'} <span class="bs-more">tap for details</span></div></summary>
   <div class="bs-d"><div class="small">start ${$m(v.S0)} · death below ${$m(v.DL)} · born ${esc(b.born_sast||'—')} SAST${b.pinned?' · <b>pinned</b>: strategy fixed, no respawn swap':''}${b.note?' · '+esc(b.note):''}${v.recent?` · <b class="dn">died ${esc(v.recent.time_sast)} SAST at ${$m(v.recent.equity)}, respawned with new strategies</b>`:''}</div>
   <div class="small">${v.open.length?'open: '+v.open.map(p=>`${esc(p.m)} @ ${esc(p.entry)} (SL ${esc(p.sl??'—')})`).join(', '):'no open positions'} · ${b.closed||0} closed this life</div>
-  <ul>${v.strats.map(s=>`<li><b>${esc(s.x.family||'?')} ${esc(s.x.tf||'')}</b> <span class="${s.t&&s.t.n?'':'dim'}">${esc(s.txt)}</span><br><span class="dim">${esc(s.x.id)} · ${s.x.tested?`lab OOS n ${s.x.oos_n??'—'} · ΣR ${s.x.oos_total_R??'—'}`:'untested in lab'}</span></li>`).join('')}</ul></div></details>`).join('')}</div></div>`;
+  <ul>${v.strats.map(s=>`<li><b>${esc(s.x.family||'?')} ${esc(s.x.tf||'')}</b> <span class="${s.t&&s.t.n?'':'dim'}">${esc(s.txt)}</span><br><span class="dim">${esc(s.x.id)} · ${s.x.tested?`lab OOS n ${s.x.oos_n??'—'} · ΣR ${s.x.oos_total_R??'—'}`:'untested in lab'}</span></li>`).join('')}</ul></div></details>`).join('')}</div>`;}).join('');})()}</div>`;
  el.querySelector('[data-go]')?.addEventListener('click',e=>{e.preventDefault();window.go&&window.go('rnd');});}
+
+// ---------- bot groups (style + market), assigned from the data so new bots fall in automatically ----------
+export const GROUPS=[
+ {k:'main',name:'MAIN',col:0x39ff88,desc:'The v5 crypto swing bot: pulse engine, 30m checks. PAPER.'},
+ {k:'swing',name:'SWING SQUAD',col:0xff8a3d,desc:'Unproven strategies dealt from the lab queue on purpose; respawn with the next specs.'},
+ {k:'news',name:'NEWS SHOCK',col:0xff5ec8,desc:'Trades confirmed news alerts only, SL/TP on every order.'},
+ {k:'month',name:'MONTH-END',col:0xffd23f,desc:'Pinned turn-of-month (TOM) strategies on KF perps.'},
+ {k:'day5',name:'DAY TRADING 5m',col:0x3ad7ff,desc:'Pinned 5m strategies on the fwd5m sub-loop. Plumbing test, backtest negative.'},
+ {k:'winner',name:'WINNER STYLES',col:0xb48cff,desc:'How winners trade: families copied from documented profitable styles (S12+ once slots exist).'},
+ {k:'other',name:'OTHER',col:0x9bb0b8,desc:'Bots that match no group rule yet.'}];
+export function groupOf(b){const S=b.strats||[],s=S[0]||{},fam=S.map(x=>String(x.family||'')).join(' '),id=S.map(x=>String(x.id||'')).join(' ');
+ if(b.kind==='news-shock'||/news/.test(fam))return 'news';
+ if(/winner/i.test(String(b.kind||''))||/(^|\s)(WIN|FWD-W-)/.test(id)||S.some(x=>/^w_/.test(String(x.family||''))||/WINNERS/.test(String(x.parent||''))))return 'winner';
+ if(S.some(x=>x.tf==='5m')||/FWD-5M/.test(id))return 'day5';
+ if(b.pinned&&/\btom\b/.test(fam))return 'month';
+ if(!b.pinned&&S.length&&S.every(x=>/^GEN-/.test(String(x.id))))return 'swing';
+ return 'other';}
+const short=m=>String(m).replace(/USDT?$/,'');
+export function nextTOM(b,now=Date.now()){const s=(b.strats||[]).find(x=>x.family==='tom');if(!s)return null;const off=Number(s.params?.off??0)||0;const d=new Date(now);
+ let t=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1+off);   // rule: daily open (00:00 UTC) of day 1+off of the next month
+ const cur=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1+off);if(cur>now)t=cur;
+ const z=new Date(t+7200e3);return `${z.getUTCDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][z.getUTCMonth()]} ${String(z.getUTCHours()).padStart(2,'0')}:${String(z.getUTCMinutes()).padStart(2,'0')} SAST`;}
+export function botMeta(b,grp=groupOf(b)){const S=b.strats||[],mk=[...new Set(S.flatMap(x=>Array.isArray(x.markets)?x.markets:[]))],tfs=[...new Set(S.map(x=>x.tf).filter(Boolean))],ven=[...new Set(S.map(x=>x.venue_label).filter(Boolean))],open=b.open||[];
+ const markets=mk.length?`${mk.slice(0,4).map(short).join(' ')}${mk.length>4?` +${mk.length-4}`:''}${ven.length?' · '+ven.join('/'):''}`:grp==='news'?'markets named by each confirmed alert':'building';
+ const status=open.length?`in trade (${open.length})`:grp==='month'?'waiting for window':'waiting for setup';
+ return{markets,nMk:mk.length,tf:tfs.length?tfs.join(' / '):grp==='news'?'per alert (4h exit)':'building',status,open,eq:b.equity??b.cash,win:grp==='month'?nextTOM(b):null,extra:grp==='day5'?'plumbing test, backtest negative · '+((f)=>f?(f.alive?'5m loop alive':'5m loop STALE ('+f.age+' min)')+' · last cycle '+f.last+' SAST':'5m loop: building')(fwdInfo(b.id)):''};}
+export function mainMeta(s){if(!s||!s.challenge)return null;const ch=s.challenge,v=s.last_bot_pulse?.verdicts||{},mk=Object.keys(v),op=ch.open_positions||[];
+ return{markets:mk.length?`${mk.slice(0,4).map(short).join(' ')}${mk.length>4?` +${mk.length-4}`:''} · Kraken paper`:'building',tf:'30m checks',status:op.length?`in trade (${op.length})`:'waiting for setup',open:op,eq:ch.equity_usd,name:`v5 bot (${ch.version||'—'})`};}
+export function grouped(q){const out=GROUPS.map(g=>({...g,bots:[]}));for(const b of (q?.bots||[])){(out.find(g=>g.k===groupOf(b))||out.at(-1)).bots.push(b);}return out;}
