@@ -97,7 +97,7 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
  extras(THREE,S,X,curves,pick,labels,flat,halo,mob);
  const pcol=[0x3ad7ff,0xc9a2ff,0xffb347,0xffd23f,0x39ff88,0x7f6cff,0x3ad7ff];
  // camera orbit
- const cam={az:-.55,el:mob?.95:.78,r:mob?21:17,auto:!RM.matches};const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let W=1,H=1;
+ const cam={az:-.55,el:mob?.95:.78,r:mob?21:18.5,auto:!RM.matches};const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let W=1,H=1;
  function size(){W=el.clientWidth||1;H=el.clientHeight||1;R.setSize(W,H,false);R.domElement.style.width=W+'px';R.domElement.style.height=H+'px';C.aspect=W/H;C.updateProjectionMatrix();dirty=true;kick();}
  const ptr=new Map();let drag=null,dirty=true;
  R.domElement.addEventListener('pointerdown',e=>{R.domElement.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);cam.auto=false;
@@ -201,7 +201,7 @@ function extras(THREE,S,X,curves,pick,labels,flat,halo,mob){const s=G&&G.s,O=X.o
  const lab=DESKS.find(d=>d.id==='lab').g,leds=lab?lab.children.filter(c=>c.geometry?.type==='BoxGeometry'&&c.material?.isMeshBasicMaterial):[],cov=(s?.bot_health?.strategy_lab?.coverage_pct??s?.strategy_lab?.coverage_pct??0),k=tickInfo();
  let blinkUntil=0;try{const seen=+localStorage.getItem('of_tick')||0;if(k&&k.last&&k.last!==seen){blinkUntil=performance.now()+3000;localStorage.setItem('of_tick',k.last);}}catch{}
  let lastClk=0;$('#ofClk').textContent=clkShort();
- X.tick=(dt,t,still,now2)=>{for(const o of anim){if(o.kind==='file'){const c=curves[o.f];let u;if(o.on&&!still){u=((t*.07)+o.k/o.n)%1;}else u=.94-o.k*.05;c.getPoint(u,o.mesh.position);o.mesh.position.y+=.08;o.mesh.rotation.y=still?0:t*.6+o.k;o.mesh.getWorldPosition(o.wp);}
+ X.tick=(dt,t,still,now2)=>{for(const o of anim){if(o.kind==='file'){const c=curves[o.f];let u;if(o.on&&!still){u=((t*.07)+o.k/o.n)%1;}else u=.78-o.k*.1;c.getPoint(u,o.mesh.position);o.mesh.position.y+=.08;o.mesh.rotation.y=still?0:t*.6+o.k;o.mesh.getWorldPosition(o.wp);}
    else if(o.bar){const life=Math.min(1,t/2.5),grow=o.dead&&!still?(life<.4?(1-life/.4):(life-.4)/.6):1;const sy=.01+o.ratio*.8*Math.max(.02,grow);o.bar.scale.y=sy;o.bar.position.y=.53+sy/2;if(o.dead&&!still&&life<.4)o.bar.material.color.setHex(Math.floor(t*8)%2?0xff3b5c:0x330000);else if(o.dead&&life>=1)o.bar.material.color.setHex(0x39ff88);}}
   const bl=performance.now()<blinkUntil&&!still;leds.forEach((l,j)=>{const lit=j<Math.max(1,Math.round(cov/100*leds.length));l.material.color.setHex(bl?((Math.floor(t*10)+j)%2?0xffffff:0x3a2f55):lit?0xc9a2ff:0x2a2440);});
   if(ct&&now2-lastClk>1000){lastClk=now2;ct.userData.draw(ct.userData.x,256,128);ct.needsUpdate=true;$('#ofClk').textContent=clkShort();}};}
