@@ -154,3 +154,7 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 .rn-tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.rn-tg h5{margin:0 0 6px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--c)}.rn-tool{padding:6px 0;border-bottom:1px dashed var(--ln);font-size:12px}
 @media (max-width:700px){.rn-res{grid-template-columns:1fr}.rn-grad{flex-direction:column}.rn-arrow{flex:0 0 34px}.rn-arrow span{width:2px;height:100%;background:repeating-linear-gradient(180deg,var(--r) 0 5px,transparent 5px 9px)}.rn-arrow.on span{background:var(--g)}.rn-arrow em{top:auto;left:calc(50% + 8px)}.rn-cv{height:240px}.rn-bar{grid-template-columns:78px 1fr 92px}}
 .rn-tg summary{cursor:pointer;list-style:none}.rn-tg summary::-webkit-details-marker{display:none}.rn-tg summary h5{display:inline}.rn-tg summary h5::before{content:'▸ ';color:var(--d)}.rn-tg[open] summary h5::before{content:'▾ '}
+/* consolidated brain verdicts panel */
+.br-three{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.br-h{margin:0 0 4px;font-size:11px;letter-spacing:.14em}.br-h .dim{letter-spacing:0;font-weight:400;margin-left:4px}
+@media (max-width:800px){.br-three{grid-template-columns:1fr}}
+.rn-grad .rn-st:last-child h4{color:var(--a)}

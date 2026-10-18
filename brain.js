@@ -16,11 +16,12 @@ function shell(){return `<div class="br">
 <div class="br-kpis" id="brK"></div>
 <div class="panel"><div class="ph"><b class="c">FORECASTER</b><span class="dim small" id="brFm">read-only projections · never places trades or sets size</span></div><div id="brF"></div></div>
 <div class="panel"><div class="ph"><b>SYNAPSES IN TRAINING</b><span class="dim small">setups earning trust · 30 forward samples needed</span></div><div id="brL"></div></div>
-<div class="br-two"><div class="panel"><div class="ph"><b class="g">TRUSTED</b><span class="dim small">earned normal paper size</span></div><div id="brT"></div></div>
-<div class="panel"><div class="ph"><b class="r">RETIRED</b><span class="dim small">dropped: lost money after fees</span></div><div id="brX"></div></div></div>
-<div class="panel"><div class="ph"><b class="a">LESSONS FROM DEATHS</b><span class="dim small">a dead version halves the weight of its setups</span></div><div id="brD"></div></div>
-<div class="panel"><div class="ph"><b>NEURAL LOG</b><span class="dim small">newest first</span></div><ol id="brG" class="br-log"></ol></div>
-<details class="adv panel"><summary>How the brain learns (method + honest limits)</summary><div id="brM" class="small"></div></details>
+<div class="panel"><div class="ph"><b>VERDICTS &amp; LESSONS</b><span class="dim small">trusted · retired · deaths, in one place</span></div><div class="br-three">
+ <div><h5 class="g br-h">TRUSTED <span class="dim">earned normal paper size</span></h5><div id="brT"></div></div>
+ <div><h5 class="r br-h">RETIRED <span class="dim">lost money after fees</span></h5><div id="brX"></div></div>
+ <div><h5 class="a br-h">LESSONS FROM DEATHS <span class="dim">a death halves its setups' weight</span></h5><div id="brD"></div></div></div></div>
+<div class="panel"><div class="ph"><b>NEURAL LOG</b><span class="dim small">newest first</span></div><ol id="brG" class="br-log"></ol>
+ <details class="adv"><summary>How the brain learns (method + honest limits)</summary><div id="brM" class="small"></div></details></div>
 </div><div class="br-tick"><div id="brTk" class="br-tick-in"></div></div>`;}
 function render(){const c=B.counts||{},ch=ST.challenge||{},sn=ST.sentiment||{};
  if(ST.generated_at!==lastGen){if(lastGen)fire(14,'#39ff88');lastGen=ST.generated_at;}
