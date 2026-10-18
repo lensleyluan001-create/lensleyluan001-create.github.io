@@ -126,3 +126,6 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 .br-tip table{border-collapse:collapse;margin:4px 0;width:100%}.br-tip td{padding:1px 6px 1px 0}.br-tip td:last-child{text-align:right}.br-tf{margin:4px 0;border-top:1px solid rgba(57,255,136,.15);padding-top:4px}.br-tg{margin:2px 0}
 .br-ctl{position:absolute;right:10px;bottom:8px;display:flex;gap:6px;align-items:center;font-size:11px;z-index:2}.br-ctl button{font:inherit;font-family:var(--mono,ui-monospace,monospace);letter-spacing:.12em;background:rgba(3,6,5,.75);color:#39ff88;border:1px solid rgba(57,255,136,.4);border-radius:6px;padding:3px 8px;cursor:pointer}.br-ctl button:hover,.br-ctl button.on{background:rgba(57,255,136,.15)}
 @media (max-width:600px){#brHint{display:none}}
+@media (max-width:600px){.br-hero{height:min(64vh,480px)}.br-ov .small{font-size:10px}}
+.br-tip{box-sizing:border-box}.br-tip .br-sn{overflow-wrap:anywhere}
+@media (max-width:600px){.br-tip{max-width:calc(100% - 12px);font-size:11px}.br-tip table{table-layout:fixed}.br-tip td{overflow-wrap:anywhere}}
