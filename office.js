@@ -15,14 +15,16 @@ const DESKS=[
  {id:'desk',name:'Desk',role:'DESK',pos:[4.6,2.6],col:0x3ad7ff,tab:'proof',job:'Books every trade into the hash-chained proof ledger and writes the daily report.'},
  {id:'squad',pod:1,name:'Paper squad S1–S6',role:'SQUAD',pos:[-7.4,0.7],col:0xff8a3d,tab:'rnd',job:'Six PAPER bots trading unproven lab specs on purpose, $1,000 each, die below $500 and respawn with the next specs. Forward evidence only; nothing here books for the bot.'},
  {id:'luan',name:'Luan',role:'LUAN',pos:[-2.8,-4.3],col:0xf4efe2,tab:'overview',job:'The owner. Gets the daily report, approves every change. Reads PAPER results only; nothing reaches live money without him.'},
+ {id:'wall',board:1,name:'Influencer watch wall',role:'WATCH WALL',pos:[-8.4,-2.6],ly:3.4,col:0xffb347,tab:'rnd',job:'The watching board: the people who move markets, from the Lulu Research map. A tile lights up when that person has spoken recently (WATCH) or a news alert matches them (HIGH). Statements fly to Research as files. PAPER research only.'},
  {id:'dev',name:'Lulu Dev',role:'DEV',pos:[-2.3,4.6],col:0xff5ec8,tab:'brain',job:'Builds the OS: look and workflow only. Never touches the engine, sizing, risk or tick.'}];
-const FLOWS=[['research','lab','ideas'],['lab','risk','lab results'],['risk','booked','sign-off'],['booked','exec','booked strategies'],['exec','kraken','orders'],['kraken','desk','fills / trades'],['desk','luan','daily report','luan'],['lab','squad','unproven specs · paper, skips the gates','squad']];
+const FLOWS=[['research','lab','ideas'],['lab','risk','lab results'],['risk','booked','sign-off'],['booked','exec','booked strategies'],['exec','kraken','orders'],['kraken','desk','fills / trades'],['desk','luan','daily report','luan'],['lab','squad','unproven specs · paper, skips the gates','squad'],['wall','research','statements','wall']];
 const FON=i=>G?.flows[FLOWS[i][3]||FLOWS[i][0]];
-let SQD=null;
+let SQD=null,INF=null,IM=null;
 export async function show(){const box=$('#office');if(!box.dataset.init){box.dataset.init=1;box.innerHTML=shell();wire();}
  if(Date.now()-loadedAt>60000){loadedAt=Date.now();try{const r=await fetch('/api/state',{cache:'no-store'});ST=r.ok?await r.json():null;}catch{ST=null;}
   try{const r=await fetch('/api/lab?key=inbox_status');INB=r.ok?await r.json():null;}catch{INB=null;}
-  try{const r=await fetch('/api/lab?key=squad');SQD=r.ok?await r.json():null;}catch{SQD=null;}derive();}
+  try{const r=await fetch('/api/lab?key=squad');SQD=r.ok?await r.json():null;}catch{SQD=null;}
+  try{IM=await import('/influence.js');INF=await IM.loadInfluence();}catch{INF=null;}derive();}
  if(!mode)await start();else{refresh();kick();}}
 function shell(){return`<div class="of"><div class="panel of-hero"><div id="ofStage" class="of-stage"></div><div class="of-ov"><div class="br-t">NORTHLINE//<b>OFFICE</b></div><div class="br-honest">PAPER ONLY · LIVE FROM THE PUBLISHED STATE</div><div id="ofStat" class="dim small">opening the office…</div></div>
  <div id="ofCard" class="of-card" hidden></div><div id="ofTip" class="of-tip" hidden></div><div id="ofClk" class="of-clk"></div><div class="br-ctl of-ctl"><span class="dim" id="ofHint">tap a desk · drag to turn · pinch or scroll to zoom</span><button id="of2d" type="button">2D</button></div><div id="ofLabels" class="of-labels"></div></div>
@@ -35,7 +37,7 @@ function derive(){const s=ST&&!ST.error?ST:null,sl=s?.strategy_lab||{},b=s?.brai
  const booked=[...((sl.lab_rules||{}).trusted||[]),...((s?.rebuild_candidates||{}).candidates||[])],lrun=sl.last_run_sast?Date.parse(sl.last_run_sast.replace(' ','T')+':00+02:00'):0,running=Date.now()-lrun<45*60000;
  const verd=Object.values(s?.last_bot_pulse?.verdicts||{}),aside=verd.filter(v=>v==='STAND_ASIDE').length,lastTs=last?Date.parse(last.time_SAST.replace(' ','T')+':00+02:00'):0;
  const none='<span class="dim">nothing in the published data for this</span>';
- G={s,running,booked,flows:{research:specs.length>0||!!gen,lab:(sl.trusted||[]).length>0,risk:booked.length>0,booked:booked.length>0,exec:(ch.open_positions||[]).length>0||Date.now()-lastTs<6*3600e3,kraken:Date.now()-lastTs<24*3600e3,desk:false,luan:false,squad:!!(SQD?.bots||[]).some(b=>(b.strats||[]).length)},
+ G={s,running,booked,flows:{research:specs.length>0||!!gen,lab:(sl.trusted||[]).length>0,risk:booked.length>0,booked:booked.length>0,exec:(ch.open_positions||[]).length>0||Date.now()-lastTs<6*3600e3,kraken:Date.now()-lastTs<24*3600e3,desk:false,luan:false,wall:!!(INF&&IM&&IM.speaking(INF).length),squad:!!(SQD?.bots||[]).some(b=>(b.strats||[]).length)},
  st:{alex:s?[`bot ${esc(ch.version||'—')} · ${s.mode||'PAPER'} · live money ${s.live_money?'<b class="r">ON</b>':'off'}`,`last tick ${sast(h.last_tick_ts)} SAST · publish: ${esc(h.last_publish_status||'—')} · engine ${h.engine_check?.match?'<b class="g">match</b>':'<b class="r">check</b>'}`,'No per-agent activity log is published; this shows the bot run Alex leads.']:null,
   research:specs.length||gen?[`${specs.length} hand-written specs · ${gen?gen.total.toLocaleString()+' generated':'no generator data'}`,lastV?`last verdict: <b>${esc(lastV[0])}</b> ${esc(lastV[1].verdict||lastV[1].status)} (${esc(lastV[1].verdict_sast)} SAST)`:none,`${specs.filter(([,v])=>/^FAIL/.test(v.verdict||'')).length} FAIL · ${specs.filter(([,v])=>/^PASS/.test(v.verdict||'')).length} PASS`]:null,
   lab:sl.variants_tested!=null?[`${sl.variants_tested.toLocaleString()} / ${(sl.family_size||0).toLocaleString()} variants tested (${sl.coverage_pct}%)`,`last batch ${esc(sl.last_run_sast)} SAST · ${running?'<b class="g">sweep running</b>':'idle'}`,`${(sl.trusted||[]).length} promoted${(sl.trusted||[]).length?'':' · <b class="a">no edge yet</b>'}${gen?` · generator ${gen.tested.toLocaleString()} tested, ${gen.passed} PASS`:''}`]:null,
@@ -45,18 +47,19 @@ function derive(){const s=ST&&!ST.error?ST:null,sl=s?.strategy_lab||{},b=s?.brai
   kraken:s?[`equity $${(ch.kraken_equity_usd??ch.equity_usd??0).toFixed(2)} (paper) · start $${ch.start_usd??'—'}`,`${(ch.open_positions||[]).length} open · ${st.closed_trades||0} closed this version`,`prices: Kraken public REST · no real orders`]:null,
   desk:s?[`${s.proof?.trade_count??tr.length} trades in the proof ledger · chain head ${esc(String(s.proof?.chain_head||'').slice(0,10))}…`,last?`last booked: ${esc(last.action)} ${esc(last.pair)} pnl ${esc(last.pnl_usd||'open')} (${esc(last.time_SAST)} SAST)`:none,`daily report: ${none}`]:null,
   squad:sqCard(),
+  wall:wallCard(),
   luan:[`daily report: <span class="dim">none published yet. The Desk has no report job in the published data, so this flow is idle.</span>`,`approvals happen in chat with Alex; they are not in the published data`],
   dev:null}};
  const n=FLOWS.filter(([a])=>G.flows[a]).length;$('#ofStat').innerHTML=s?`state ${sast(s.generated_at)} SAST · ${n}/${FLOWS.length} flows moving · ${booked.length?booked.length+' booked':'none booked yet'}`:'<span class="r">No data: sign in to load the office.</span>';
  flowPanel();}
 function flowPanel(){const name=id=>DESKS.find(d=>d.id===id).name;$('#ofFlow').innerHTML=FLOWS.map(([a,b,w],i)=>{const on=FON(i);return`<div class="of-f ${on?'on':''}"><span>${esc(name(a))}</span><i><em></em></i><span>${esc(name(b))}</span><small>${esc(w)} · ${on?'moving':a==='lab'?'gate closed: 0 promoted':a==='risk'||a==='booked'?'nothing to pass yet':a==='desk'?'no report published':'idle'}</small></div>`;}).join('');}
 function cardHtml(d){const L=d.lines?d.lines():G&&G.st[d.id];return`<button class="of-x" aria-label="close">✕</button><div class="of-cr" style="color:#${d.col.toString(16).padStart(6,'0')}">${d.role}</div><h4>${esc(d.name)}</h4><p class="dim small">${esc(d.job)}</p>
- <div class="of-cs">${L?L.map(x=>`<div>${x}</div>`).join(''):'<div class="dim">The published data has nothing for this bot yet: no status or last action to show.</div>'}</div><button class="rn-btn" data-go="${d.tab}"${d.id==='squad'?' data-sec="rnSq"':''}>Open ${esc({overview:'Overview',rnd:'R&D',bot:'Bot',proof:'Proof',brain:'Brain'}[d.tab])} →</button>`;}
-const DESC={spec:'A strategy spec file: a written, testable hypothesis on its way to the lab.',verdict:'A verdict file: the lab result for one spec, sent to Risk. FAIL means no variant passed every gate.',booked:'A booked strategy on its way to Execution.',order:'An order ticket for an open paper position.',trade:'A trade ticket from the hash-chained proof ledger, filed by the Desk.',sqspec:'An unproven lab spec dealt to the PAPER squad on purpose.'};
+ <div class="of-cs">${L?L.map(x=>`<div>${x}</div>`).join(''):'<div class="dim">The published data has nothing for this bot yet: no status or last action to show.</div>'}</div><button class="rn-btn" data-go="${d.tab}"${d.id==='squad'?' data-sec="rnSq"':d.id==='wall'?' data-sec="rn-infl"':''}>Open ${esc({overview:'Overview',rnd:'R&D',bot:'Bot',proof:'Proof',brain:'Brain'}[d.tab])} →</button>`;}
+const DESC={spec:'A strategy spec file: a written, testable hypothesis on its way to the lab.',verdict:'A verdict file: the lab result for one spec, sent to Risk. FAIL means no variant passed every gate.',booked:'A booked strategy on its way to Execution.',order:'An order ticket for an open paper position.',trade:'A trade ticket from the hash-chained proof ledger, filed by the Desk.',sqspec:'An unproven lab spec dealt to the PAPER squad on purpose.',statement:'A recent statement by a watched person, sent to Research as evidence. PAPER research only.'};
 function openCard(d,x,y){const c=$('#ofCard');pinned=d;c.innerHTML=cardHtml(d);c.hidden=false;const st=$('#ofStage').getBoundingClientRect(),w=c.offsetWidth,h=c.offsetHeight;
  if(st.width<600){c.style.left='8px';c.style.right='8px';c.style.top='auto';c.style.bottom='44px';}else{c.style.right='auto';c.style.bottom='auto';c.style.left=Math.max(8,Math.min(st.width-w-8,x+16))+'px';c.style.top=Math.max(8,Math.min(st.height-h-8,y-h/2))+'px';}}
 // ---------- 2D fallback ----------
-function mode2d(why){mode='2d';const el=$('#ofStage');el.innerHTML=`<div class="of-2d has-o">${DESKS.map(d=>`<button class="of-d2" data-id="${d.id}" style="left:${(d.pos[0]+8)/16.4*100}%;top:${(d.pos[1]+4.6)/10.6*100}%;--c:#${d.col.toString(16).padStart(6,'0')}"><b>${d.role}</b><span>${esc(d.name)}</span></button>`).join('')}</div><div class="of-why dim small">2D view · ${esc(why)}</div>${objs2d()}`;$('#ofClk').textContent=clkShort();
+function mode2d(why){mode='2d';const el=$('#ofStage');el.innerHTML=`<div class="of-2d has-o">${DESKS.map(d=>`<button class="of-d2" data-id="${d.id}" style="left:${Math.max(5,Math.min(95,(d.pos[0]+8)/16.4*100))}%;top:${Math.max(4,Math.min(96,(d.pos[1]+4.6)/10.6*100))}%;--c:#${d.col.toString(16).padStart(6,'0')}"><b>${d.role}</b><span>${esc(d.name)}</span></button>`).join('')}</div><div class="of-why dim small">2D view · ${esc(why)}</div>${objs2d()}`;$('#ofClk').textContent=clkShort();
  $('#ofLabels').innerHTML='';$('#of2d').textContent='3D';const OD=objDefs();el.onclick=e=>{const b=e.target.closest('.of-d2,.of-o2');if(!b)return;const r=b.getBoundingClientRect(),s=el.getBoundingClientRect();openCard(DESKS.find(d=>d.id===b.dataset.id)||OD.find(d=>d.id===b.dataset.id),r.right-s.left,r.top-s.top+r.height/2);};}
 // ---------- 3D ----------
 function webgl(){try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'));}catch{return false;}}
@@ -79,6 +82,7 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
   else if(d.shelf){const p=new THREE.Mesh(new THREE.CylinderGeometry(.9,1,.4,6),flat(0x1a1608));p.position.y=.2;g.add(p);const cnt=Math.min(6,G?.booked.length||0);
    for(let i=0;i<Math.max(1,cnt);i++){const c=new THREE.Mesh(new THREE.OctahedronGeometry(.22,0),cnt?new THREE.MeshBasicMaterial({color:d.col}):new THREE.MeshBasicMaterial({color:0x3a3420,wireframe:true}));c.position.set(Math.cos(i*1.05)*.45,.75,Math.sin(i*1.05)*.45);g.add(c);c.userData.spin=1;screens.push(c);}}
   else if(d.pod){}
+  else if(d.board){const tx=wallTex(THREE);const b=new THREE.Mesh(new THREE.BoxGeometry(4.2,2.3,.14),new THREE.MeshBasicMaterial({map:tx}));b.position.y=1.85;g.rotation.y=2.12;g.add(b);const f=new THREE.Mesh(new THREE.BoxGeometry(4.4,.12,.3),flat(0x1c1408));f.position.y=.64;g.add(f);[-1.9,1.9].forEach(x=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.1,.7,.1),flat(0x0c0a08));l.position.set(x,.33,0);g.add(l);});}
   else{g.rotation.y=2.12;const big=d.id==='alex'?1.25:1;const top=new THREE.Mesh(new THREE.BoxGeometry(2*big,.12,1*big),flat(0x14231c));top.position.y=.75;g.add(top);
    [[-.85,-.4],[.85,-.4],[-.85,.4],[.85,.4]].forEach(([x,z])=>{const l=new THREE.Mesh(new THREE.BoxGeometry(.08,.75,.08),flat(0x0c1611));l.position.set(x*big,.37,z*big);g.add(l);});
    const mon=new THREE.Mesh(new THREE.BoxGeometry(1.1*big,.65,.06),flat(0x0a0f0d));mon.position.set(0,1.2,-.3*big);g.add(mon);const stx=screenTex(THREE,d);const scr=new THREE.Mesh(new THREE.PlaneGeometry(1*big,.55),new THREE.MeshBasicMaterial(stx?{map:stx}:{color:d.col}));scr.position.set(0,1.2,-.26*big);g.add(scr);screens.push(scr);
@@ -97,7 +101,7 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
  extras(THREE,S,X,curves,pick,labels,flat,halo,mob);
  const pcol=[0x3ad7ff,0xc9a2ff,0xffb347,0xffd23f,0x39ff88,0x7f6cff,0x3ad7ff];
  // camera orbit
- const cam={az:-.55,el:mob?.95:.78,r:mob?21:18.5,auto:!RM.matches};const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let W=1,H=1;
+ const LK=mob?[-1.1,.2,.5]:[.3,.2,.6];const cam={az:-.55,el:mob?.95:.78,r:mob?21:18.5,auto:!RM.matches};const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let W=1,H=1;
  function size(){W=el.clientWidth||1;H=el.clientHeight||1;R.setSize(W,H,false);R.domElement.style.width=W+'px';R.domElement.style.height=H+'px';C.aspect=W/H;C.updateProjectionMatrix();dirty=true;kick();}
  const ptr=new Map();let drag=null,dirty=true;
  R.domElement.addEventListener('pointerdown',e=>{R.domElement.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);cam.auto=false;
@@ -121,7 +125,7 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
    X.tick(dt,t,still,now);pk.instanceMatrix.needsUpdate=true;if(pk.instanceColor)pk.instanceColor.needsUpdate=true;
    screens.forEach((s,i)=>{if(s.userData.spin)s.rotation.y+=dt*.8;else s.material.color&&(s.material.opacity=1);});
    DESKS.forEach((d,i)=>{const g=d.g,on=pinned===d||hov===d;g.userData.halo.material.opacity=(on?.95:.45)+(still?0:.12*Math.sin(t*2+i));if(g.userData.head&&!still)g.userData.head.position.y=1.3+.03*Math.sin(t*3+i);});}
-  last=now;C.position.set(Math.cos(cam.az)*Math.cos(cam.el)*cam.r+.3,Math.sin(cam.el)*cam.r,Math.sin(cam.az)*Math.cos(cam.el)*cam.r+.6);C.lookAt(.3,0.2,.6);
+  last=now;C.position.set(Math.cos(cam.az)*Math.cos(cam.el)*cam.r+LK[0],Math.sin(cam.el)*cam.r,Math.sin(cam.az)*Math.cos(cam.el)*cam.r+LK[2]);C.lookAt(LK[0],LK[1],LK[2]);
   if(still&&!dirty){running=false;return;}dirty=false;R.render(S,C);
   if(still)X.tick(0,t,true,now);labels.forEach(([lb,d])=>{V.set(d.pos[0],d.ly??2.3,d.pos[1]).project(C);lb.style.transform=`translate(${(V.x*.5+.5)*W}px,${(-V.y*.5+.5)*H}px) translate(-50%,-100%)`;lb.style.opacity=V.z<1?1:0;lb.classList.toggle('on',pinned===d||hov===d);});
   if(still){running=false;return;}requestAnimationFrame(frame);}
@@ -164,9 +168,10 @@ function flowItems(i){const s=G&&G.s;if(!s)return[];const ch=s.challenge||{},sp=
  if(i===2||i===3)return(G.booked||[]).slice(0,3).map(b=>({kind:'booked',title:b.setup||b.id||'strategy',tab:'rnd',lines:[esc(JSON.stringify(b).slice(0,200))]}));
  if(i===4)return(ch.open_positions||[]).slice(0,3).map(p=>({kind:'order',title:`${p.side||''} ${p.pair||p.symbol||''}`.trim()||'open position',tab:'bot',lines:[esc(JSON.stringify(p).slice(0,220))]}));
  if(i===5)return tr;
+ if(FLOWS[i][0]==='wall'){return(INF&&IM?IM.speaking(INF):[]).slice(0,4).map(p=>({kind:'statement',title:`${p.name}: ${p.status==='HIGH'?'HIGH pulse':'spoke'}`,tab:'rnd',lines:[`${p.recent[0]?esc(p.recent[0].text):'(no text captured)'}`,`${p.ts?sast(p.ts)+' SAST':''} · markets: ${p.markets.length?esc(p.markets.join(', ')):'not measured yet (map building)'}`,'to S7: <span class="dim">no S7 bot exists in the published squad yet, so this file only goes to Research</span>']}));}
  if(i===7){const seen=new Set(),o=[];for(const b of SQD?.bots||[])for(const x of b.strats||[])if(!seen.has(x.id)&&o.length<3){seen.add(x.id);o.push({kind:'sqspec',title:`${x.id} → ${b.id}`,tab:'rnd',lines:[`${esc(x.family)} · ${esc(x.tf)} · ${x.tested?`lab OOS n ${x.oos_n} · ΣR ${x.oos_total_R} · z=3 lower ${x.oos_lo}`:'untested in lab'}`,`params ${esc(JSON.stringify(x.params))}`,'PAPER only · forward evidence, never books']});}return o;}
  return[];}
-const KCOL={spec:0x3ad7ff,verdict:0xff6b7d,booked:0xffd23f,order:0x39ff88,trade:0x7f6cff,sqspec:0xff8a3d};
+const KCOL={statement:0xffb347,spec:0x3ad7ff,verdict:0xff6b7d,booked:0xffd23f,order:0x39ff88,trade:0x7f6cff,sqspec:0xff8a3d};
 // plain object definitions shared by the 3D scene and the 2D fallback (real data only)
 function objDefs(){const D=[];
  FLOWS.forEach((f,i)=>{const it=flowItems(i),on=FON(i);it.forEach((x,k)=>D.push({kind:'file',f:i,k,n:it.length,on,id:`file-${i}-${k}`,role:x.kind==='sqspec'?'SPEC → SQUAD':x.kind.toUpperCase()+' FILE',name:x.title,job:DESC[x.kind],tip:DESC[x.kind],col:KCOL[x.kind],tab:x.tab,
@@ -210,3 +215,12 @@ function clkShort(){const k=tickInfo();if(!k||!k.last)return 'no tick data';cons
 
 function objs2d(){const D=objDefs(),grp=[['FILES IN TRANSIT',D.filter(o=>o.kind==='file')],['CABINETS',D.filter(o=>o.kind==='cab')],['PAPER SQUAD POD',D.filter(o=>o.kind==='bot')],['CLOCK',D.filter(o=>o.kind==='clock')]];
  return `<div class="of-objs">${grp.map(([t,L])=>`<div class="of-og"><b class="dim small">${t}</b>${L.length?L.map(o=>`<button class="of-o2" data-id="${o.id}" style="--c:${hex(o.col)}" title="${esc(o.tip||'')}"><b>${esc(o.role)}</b> ${esc(o.name)}${o.kind==='bot'?` <i style="width:${Math.round(Math.min(1,o.ratio/1.5)*100)}%"></i>`:''}</button>`).join(''):'<span class="dim small">none in the published data</span>'}</div>`).join('')}</div>`;}
+
+function wallCard(){if(!INF||!IM)return['<span class="dim">building: no influence row published yet (or not signed in)</span>'];const P=IM.people(INF),sp=P.filter(p=>p.status!=='quiet');
+ return[`${INF.status==='ready'?'map ready':'<b class="a">map BUILDING</b>: markets and impact scores not measured yet'} · ${P.length} people watched`,sp.length?'speaking: '+sp.map(p=>`<b class="${p.status==='HIGH'?'r':'a'}">${esc(p.name)}</b> ${p.status}`).join(', '):'<span class="dim">everyone quiet right now</span>',
+  `S7: <span class="dim">no S7 bot exists in the published squad yet, so statements go to Research only</span>`];}
+function wallTex(THREE){const P=INF&&IM?IM.people(INF):[];return canvasTex(THREE,512,280,(x,w,h)=>{x.fillStyle='#070502';x.fillRect(0,0,w,h);x.strokeStyle='#ffb347';x.lineWidth=5;x.strokeRect(3,3,w-6,h-6);
+ x.fillStyle='#ffb347';x.font='bold 24px monospace';x.fillText('WATCHING BOARD',16,34);x.font='13px monospace';x.fillStyle='#a98';x.fillText(!INF?'building: no data':INF.status==='ready'?'PAPER research':'map building · stats not measured yet',16,54);
+ if(!P.length)return;const cols=4,cw=(w-24)/cols,ch=50;P.slice(0,16).forEach((p,i)=>{const cx=12+(i%cols)*cw,cy=66+Math.floor(i/cols)*ch,c=p.status==='HIGH'?'#ff3b5c':p.status==='WATCH'?'#ffb347':'#2c3a34';
+  x.fillStyle=p.status==='quiet'?'#0d1512':c+'33';x.fillRect(cx+2,cy+2,cw-6,ch-6);x.strokeStyle=c;x.lineWidth=2;x.strokeRect(cx+2,cy+2,cw-6,ch-6);x.fillStyle=c==='#2c3a34'?'#6a7d75':c;x.beginPath();x.arc(cx+22,cy+ch/2,13,0,7);x.fill();
+  x.fillStyle='#000';x.font='bold 12px monospace';x.textAlign='center';x.fillText(IM.initials(p.name),cx+22,cy+ch/2+4);x.textAlign='left';x.fillStyle='#e8eee9';x.font='13px monospace';x.fillText(p.name.slice(0,11),cx+40,cy+22);x.fillStyle=p.status==='quiet'?'#6a7d75':c;x.font='11px monospace';x.fillText(p.status==='HIGH'?'HIGH':p.status.toUpperCase(),cx+40,cy+38);});});}
