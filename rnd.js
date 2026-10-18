@@ -125,15 +125,15 @@ function queue(){const Q=J(LSQ,[]),C=CLOUD.ok?CLOUD.reqs||[]:[];
 
 // PAPER squad (read-only lab row 'squad', written by the box tick). Honest: shows only what the row says.
 function squad(){const el=$('#rnSq');if(!el)return;const q=SQD&&Array.isArray(SQD.bots)?SQD:null;
- if(!q){el.innerHTML=`<div class="ph"><b class="a">PAPER SQUAD · S1–S6</b><span class="dim small">no squad data published yet (lab row 'squad' missing or not signed in)</span></div>`;return;}
+ if(!q){el.innerHTML=`<div class="ph"><b class="a">PAPER SQUAD</b><span class="dim small">no squad data published yet (lab row 'squad' missing or not signed in)</span></div>`;return;}
  const st=q.stats||{},m=v=>v==null?'—':'$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),S0=q.start||1000,DL=q.death_line||500,dth=q.deaths||[];
  const sr=s=>{const t=st[s.id];const fw=t&&t.n?`<b>${t.n}</b> fwd · win ${(100*(t.win_rate??t.wins/t.n)).toFixed(0)}% · avg R <b class="${t.R>=0?'g':'r'}">${(t.R/t.n).toFixed(2)}</b>`:'<span class="dim">no trades yet</span>';
   const lab=s.tested?`lab OOS n ${s.oos_n??'—'} · ΣR ${s.oos_total_R??'—'}`:'untested in lab';return `<li><span class="rn-sqid">${esc(s.family||'?')} · ${esc(s.tf||'')}</span> ${fw}<span class="dim small"> · ${esc(lab)}</span></li>`;};
  const bots=q.bots.map(b=>{const eq=b.equity??b.cash,ch=eq-S0,d=dth.filter(x=>(x.bot||x.id)===b.id).length,lives=(b.life||1)-1;
-  return `<div class="rn-sqb"><div class="rn-sqh"><b>${esc(b.id)}</b><span class="br-paper">PAPER</span><span class="dim small">life ${b.life||1} · deaths ${Math.max(d,lives)}</span></div>
+  return `<div class="rn-sqb"><div class="rn-sqh"><b>${esc(b.id)}</b><span class="br-paper">PAPER</span>${b.pinned?'<span class="br-paper" style="color:#ffd23f;border-color:#ffd23f">PINNED</span>':''}${b.kind?`<span class="br-paper">${esc(b.kind)}</span>`:''}<span class="dim small">life ${b.life||1} · deaths ${Math.max(d,lives)}</span></div>
   <div class="rn-big">${m(eq)}</div><div class="small ${ch>0?'g':ch<0?'r':'dim'}">${ch>=0?'+':''}${m(ch).replace('$-','-$')} vs ${m(S0)} start · death below ${m(DL)}</div>
   <div class="small">${(b.open||[]).length?`${b.open.length} open: `+b.open.map(p=>`${esc(p.m)} @ ${p.entry}`).join(', '):'<span class="dim">no open positions</span>'} · ${b.closed||0} closed this life</div>
   <ul class="rn-sql">${(b.strats||[]).map(sr).join('')}</ul></div>`;}).join('');
  const tot=q.bots.reduce((a,b)=>a+(b.equity??b.cash),0),n=Object.values(st).reduce((a,t)=>a+(t.n||0),0);
- el.innerHTML=`<div class="ph"><b class="a">PAPER SQUAD · S1–S6</b><span class="dim small">PAPER ONLY · unproven strategies on purpose · forward evidence only, never books for the bot · updated ${esc(q.updated_sast||'—')} SAST</span></div>
+ el.innerHTML=`<div class="ph"><b class="a">PAPER SQUAD · ${esc(q.bots.map(b=>b.id).join(' '))}</b><span class="dim small">PAPER ONLY · unproven strategies on purpose · forward evidence only, never books for the bot · updated ${esc(q.updated_sast||'—')} SAST</span></div>
  <div class="small rn-sqsum">squad paper equity <b>${m(tot)}</b> of ${m(S0*q.bots.length)} · ${n?n+' closed paper trades':'no trades yet'} · ${dth.length} deaths logged</div><div class="rn-sqg">${bots}</div>`;}
