@@ -60,7 +60,7 @@ function openCard(d,x,y){const c=$('#ofCard');pinned=d;c.innerHTML=cardHtml(d);c
  if(st.width<600){c.style.left='8px';c.style.right='8px';c.style.top='auto';c.style.bottom='44px';}else{c.style.right='auto';c.style.bottom='auto';c.style.left=Math.max(8,Math.min(st.width-w-8,x+16))+'px';c.style.top=Math.max(8,Math.min(st.height-h-8,y-h/2))+'px';}}
 // ---------- 2D fallback ----------
 function mode2d(why){mode='2d';const el=$('#ofStage');el.innerHTML=`<div class="of-2d has-o">${DESKS.map(d=>`<button class="of-d2" data-id="${d.id}" style="left:${Math.max(5,Math.min(95,(d.pos[0]+8)/16.4*100))}%;top:${Math.max(4,Math.min(96,(d.pos[1]+4.6)/10.6*100))}%;--c:#${d.col.toString(16).padStart(6,'0')}"><b>${d.role}</b><span>${esc(d.name)}</span></button>`).join('')}</div><div class="of-why dim small">2D view · ${esc(why)}</div>${objs2d()}`;$('#ofClk').textContent=clkShort();
- $('#ofLabels').innerHTML='';$('#of2d').textContent='3D';const OD=objDefs();el.onclick=e=>{const b=e.target.closest('.of-d2,.of-o2');if(!b)return;const r=b.getBoundingClientRect(),s=el.getBoundingClientRect();openCard(DESKS.find(d=>d.id===b.dataset.id)||OD.find(d=>d.id===b.dataset.id),r.right-s.left,r.top-s.top+r.height/2);};}
+ $('#ofLabels').innerHTML='';$('#of2d').textContent='3D';const OD=objDefs();el.onclick=e=>{const b=e.target.closest('.of-d2,.of-o2');if(!b)return;const r=b.getBoundingClientRect(),s=el.getBoundingClientRect();openCard(DESKS.find(d=>d.id===b.dataset.id)||OD.find(d=>d.id===b.dataset.id)||Object.values(decorDefs()).find(d=>d&&d.id===b.dataset.id),r.right-s.left,r.top-s.top+r.height/2);};}
 // ---------- 3D ----------
 function webgl(){try{const c=document.createElement('canvas');return !!(c.getContext('webgl2')||c.getContext('webgl'));}catch{return false;}}
 async function start(force){if(force)forced=true;if(!webgl())return mode2d('WebGL is not available on this device');if(!force&&(navigator.hardwareConcurrency||4)<=2)return mode2d('weak device detected');
@@ -98,10 +98,10 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
  const lines=curves.map((c,i)=>{const on=FON(i);const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(40)),new THREE.LineDashedMaterial({color:on?0x39ff88:0xff3b5c,dashSize:on?.35:.12,gapSize:on?.12:.22,transparent:true,opacity:on?.75:.35}));l.computeLineDistances();S.add(l);return l;});
  const NP=0,pk=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.07,0),new THREE.MeshBasicMaterial({color:0xffffff}),NP);pk.instanceMatrix.setUsage(THREE.DynamicDrawUsage);S.add(pk);
  const P=Array.from({length:NP},(_,i)=>({f:i%FLOWS.length,t:Math.random(),s:.12+Math.random()*.1}));const M=new THREE.Matrix4(),V=new THREE.Vector3(),Q=new THREE.Quaternion(),SC=new THREE.Vector3(),col=new THREE.Color();
- extras(THREE,S,X,curves,pick,labels,flat,halo,mob);
+ extras(THREE,S,X,curves,pick,labels,flat,halo,mob);decor(THREE,S,X,pick,flat,halo,mob,labels);
  const pcol=[0x3ad7ff,0xc9a2ff,0xffb347,0xffd23f,0x39ff88,0x7f6cff,0x3ad7ff];
  // camera orbit
- const LK=mob?[-1.1,.2,.5]:[.3,.2,.6];const cam={az:-.55,el:mob?.95:.78,r:mob?21:18.5,auto:!RM.matches};const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let W=1,H=1;
+ const LK=mob?[-1.1,.2,.5]:[-.5,.2,.6];const cam={az:-.55,el:mob?.95:.78,r:mob?21:20,auto:!RM.matches};const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let W=1,H=1;
  function size(){W=el.clientWidth||1;H=el.clientHeight||1;R.setSize(W,H,false);R.domElement.style.width=W+'px';R.domElement.style.height=H+'px';C.aspect=W/H;C.updateProjectionMatrix();dirty=true;kick();}
  const ptr=new Map();let drag=null,dirty=true;
  R.domElement.addEventListener('pointerdown',e=>{R.domElement.setPointerCapture(e.pointerId);ptr.set(e.pointerId,[e.clientX,e.clientY]);cam.auto=false;
@@ -179,7 +179,7 @@ function objDefs(){const D=[];
  const specs=Object.entries(INB?.specs||{}),fails=specs.filter(([,v])=>/^FAIL/.test(v.verdict||'')),g=INB?.generator,nRej=fails.length+(g?.failed||0),nBook=(G?.booked||[]).length;
  D.push({kind:'cab',id:'cab-rej',role:'FAIL ARCHIVE',name:'fail archive cabinet',pos:[-6.4,4.0],ly:1.9,col:0xff3b5c,n:nRej,tab:'rnd',tip:`${nRej.toLocaleString()} files`,job:'The FAIL archive. Every spec the lab rejected is filed here with its reasons. Rejection is the normal outcome.',
   lines:()=>[`<b>${nRej.toLocaleString()}</b> rejected · ${fails.length} hand-written + ${(g?.failed||0).toLocaleString()} generated`,...fails.slice(0,3).map(([id,v])=>`${esc(id)} · ${esc(v.verdict_sast||'')} SAST`),g?'':'<span class="dim">no generator data</span>']});
- D.push({kind:'cab',id:'cab-book',role:'BOOKED FILES',name:'booked files cabinet',pos:[3.6,4.9],ly:1.9,col:0xffd23f,n:nBook,tab:'rnd',tip:`${nBook} files`,job:'Strategies that passed every lab gate and Risk sign-off. The drawers light up as it fills.',
+ D.push({kind:'cab',id:'cab-book',role:'BOOKED FILES',name:'booked files cabinet',pos:[2.6,1.2],ly:1.9,col:0xffd23f,n:nBook,tab:'rnd',tip:`${nBook} files`,job:'Strategies that passed every lab gate and Risk sign-off. The drawers light up as it fills.',
   lines:()=>[nBook?`${nBook} booked`:'<b class="a">empty: nothing has passed every gate yet</b>','gate: lab promotion + Risk sign-off + engine parity']});
  const bots=SQD?.bots||[],S0=SQD?.start||1000,DL=SQD?.death_line||500,now=Date.now(),st=SQD?.stats||{};
  for(let i=0;i<6;i++){const b=bots[i],eq=b?(b.equity??b.cash):0,bc=!b?0x2a2a2a:eq<DL*1.2?0xff3b5c:eq<S0?0xffb347:0x39ff88,dth=b?(SQD.deaths||[]).filter(x=>(x.bot||x.id)===b.id):[],recent=dth.find(x=>now-ts2ms(x.time_sast)<6*3600e3),id=b?b.id:'S'+(i+1);
@@ -206,14 +206,15 @@ function extras(THREE,S,X,curves,pick,labels,flat,halo,mob){const s=G&&G.s,O=X.o
  const lab=DESKS.find(d=>d.id==='lab').g,leds=lab?lab.children.filter(c=>c.geometry?.type==='BoxGeometry'&&c.material?.isMeshBasicMaterial):[],cov=(s?.bot_health?.strategy_lab?.coverage_pct??s?.strategy_lab?.coverage_pct??0),k=tickInfo();
  let blinkUntil=0;try{const seen=+localStorage.getItem('of_tick')||0;if(k&&k.last&&k.last!==seen){blinkUntil=performance.now()+3000;localStorage.setItem('of_tick',k.last);}}catch{}
  let lastClk=0;$('#ofClk').textContent=clkShort();
- X.tick=(dt,t,still,now2)=>{for(const o of anim){if(o.kind==='file'){const c=curves[o.f];let u;if(o.on&&!still){u=((t*.07)+o.k/o.n)%1;}else u=.78-o.k*.1;c.getPoint(u,o.mesh.position);o.mesh.position.y+=.08;o.mesh.rotation.y=still?0:t*.6+o.k;o.mesh.getWorldPosition(o.wp);}
+ X.tick=(dt,t,still,now2)=>{for(const o of anim){if(o.kind==='file'){const c=curves[o.f];let u;if(o.on&&!still){u=((t*.05)+o.k/o.n)%1;}else u=.78-o.k*.1;c.getPoint(u,o.mesh.position);o.mesh.position.y=o.on?.62:o.mesh.position.y+.08;o.mesh.rotation.y=still?0:t*.6+o.k;o.mesh.getWorldPosition(o.wp);}
    else if(o.bar){const life=Math.min(1,t/2.5),grow=o.dead&&!still?(life<.4?(1-life/.4):(life-.4)/.6):1;const sy=.01+o.ratio*.8*Math.max(.02,grow);o.bar.scale.y=sy;o.bar.position.y=.53+sy/2;if(o.dead&&!still&&life<.4)o.bar.material.color.setHex(Math.floor(t*8)%2?0xff3b5c:0x330000);else if(o.dead&&life>=1)o.bar.material.color.setHex(0x39ff88);}}
   const bl=performance.now()<blinkUntil&&!still;leds.forEach((l,j)=>{const lit=j<Math.max(1,Math.round(cov/100*leds.length));l.material.color.setHex(bl?((Math.floor(t*10)+j)%2?0xffffff:0x3a2f55):lit?0xc9a2ff:0x2a2440);});
+  X.walk&&X.walk(t,still);X.tape&&X.tape(dt,still);
   if(ct&&now2-lastClk>1000){lastClk=now2;ct.userData.draw(ct.userData.x,256,128);ct.needsUpdate=true;$('#ofClk').textContent=clkShort();}};}
 
 function clkShort(){const k=tickInfo();if(!k||!k.last)return 'no tick data';const l='last tick '+ago(Date.now()-k.last);if(!k.next)return l;const d=k.next-Date.now();return l+' · '+(d>0?`next ~${Math.floor(d/60000)}:${String(Math.floor(d/1000)%60).padStart(2,'0')} (est.)`:'next tick due (est.)')+' · tap the clock';}
 
-function objs2d(){const D=objDefs(),grp=[['FILES IN TRANSIT',D.filter(o=>o.kind==='file')],['CABINETS',D.filter(o=>o.kind==='cab')],['PAPER SQUAD POD',D.filter(o=>o.kind==='bot')],['CLOCK',D.filter(o=>o.kind==='clock')]];
+function objs2d(){const D=objDefs(),grp=[['FILES IN TRANSIT',D.filter(o=>o.kind==='file')],['CABINETS',D.filter(o=>o.kind==='cab')],['PAPER SQUAD POD',D.filter(o=>o.kind==='bot')],['CLOCK',D.filter(o=>o.kind==='clock')],['OFFICE',(()=>{const d=decorDefs();return[d.window,d.coffee,d.ticker,d.worldmap];})()]];
  return `<div class="of-objs">${grp.map(([t,L])=>`<div class="of-og"><b class="dim small">${t}</b>${L.length?L.map(o=>`<button class="of-o2" data-id="${o.id}" style="--c:${hex(o.col)}" title="${esc(o.tip||'')}"><b>${esc(o.role)}</b> ${esc(o.name)}${o.kind==='bot'?` <i style="width:${Math.round(Math.min(1,o.ratio/1.5)*100)}%"></i>`:''}</button>`).join(''):'<span class="dim small">none in the published data</span>'}</div>`).join('')}</div>`;}
 
 function wallCard(){if(!INF||!IM)return['<span class="dim">building: no influence row published yet (or not signed in)</span>'];const P=IM.people(INF),sp=P.filter(p=>p.status!=='quiet');
@@ -224,3 +225,55 @@ function wallTex(THREE){const P=INF&&IM?IM.people(INF):[];return canvasTex(THREE
  if(!P.length)return;const cols=4,cw=(w-24)/cols,ch=50;P.slice(0,16).forEach((p,i)=>{const cx=12+(i%cols)*cw,cy=66+Math.floor(i/cols)*ch,c=p.status==='HIGH'?'#ff3b5c':p.status==='WATCH'?'#ffb347':'#2c3a34';
   x.fillStyle=p.status==='quiet'?'#0d1512':c+'33';x.fillRect(cx+2,cy+2,cw-6,ch-6);x.strokeStyle=c;x.lineWidth=2;x.strokeRect(cx+2,cy+2,cw-6,ch-6);x.fillStyle=c==='#2c3a34'?'#6a7d75':c;x.beginPath();x.arc(cx+22,cy+ch/2,13,0,7);x.fill();
   x.fillStyle='#000';x.font='bold 12px monospace';x.textAlign='center';x.fillText(IM.initials(p.name),cx+22,cy+ch/2+4);x.textAlign='left';x.fillStyle='#e8eee9';x.font='13px monospace';x.fillText(p.name.slice(0,11),cx+40,cy+22);x.fillStyle=p.status==='quiet'?'#6a7d75':c;x.font='11px monospace';x.fillText(p.status==='HIGH'?'HIGH':p.status.toUpperCase(),cx+40,cy+38);});});}
+
+// ---------- v4 decor (functional where the data allows) ----------
+const sastHour=()=>{const d=new Date(Date.now()+7200e3);return d.getUTCHours()+d.getUTCMinutes()/60;};
+function pxList(){const d=window.S&&S.d,P=d?.pulse?.pairs||{},o=[];for(const k of Object.keys(P)){const p=P[k];if(p&&p.last!=null)o.push({id:(p.label||k).replace('/USD',''),px:p.last,ch:p.metrics?.roc6h_pct,src:'Kraken 6h'});}
+ for(const q of d?.indices?.quotes||[])if(q.price!=null)o.push({id:q.id,px:q.price,ch:q.change_pct,src:'day'});return o;}
+function decor(THREE,S,X,pick,flat,halo,mob,labels){const O=X.objs,add=(o,mesh,r)=>{const h=new THREE.Mesh(new THREE.SphereGeometry(r,6,4),new THREE.MeshBasicMaterial({visible:false}));mesh.add(h);h.userData.d=o;pick.push(h);o.wp=new THREE.Vector3();mesh.getWorldPosition(o.wp);o.mesh=mesh;O.push(o);return o;};
+ const DD=decorDefs(),s=G&&G.s,hr=sastHour(),day=hr>=6.5&&hr<18.5,dusk=(hr>=5.5&&hr<6.5)||(hr>=18.5&&hr<19.5),R2=2.12;
+ // ambient lighting follows SAST time of day
+ S.add(new THREE.AmbientLight(day?0x9fc8ff:0x2a3550,day?.35:.25));const warm=new THREE.PointLight(0xffb070,day?.6:1.2,14,2);warm.position.set(1,4,1);S.add(warm);
+ // back walls with windows (day/night from SAST clock)
+ const wallM=flat(0x0a1612),wall=new THREE.Mesh(new THREE.BoxGeometry(.2,2.8,20),wallM);wall.position.set(-9.6,1.4,1);S.add(wall);
+ const skyC=day?0x7fc4ff:dusk?0xff8a5c:0x0a1430;const winT=canvasTex(THREE,128,128,(x,w,h)=>{const g=x.createLinearGradient(0,0,0,h);g.addColorStop(0,'#'+skyC.toString(16).padStart(6,'0'));g.addColorStop(1,day?'#d8f0ff':dusk?'#40204a':'#02040c');x.fillStyle=g;x.fillRect(0,0,w,h);
+  if(!day&&!dusk){x.fillStyle='#fff';for(let i=0;i<26;i++){const a=(i*97)%w,b=(i*53)%(h*.7);x.fillRect(a,b,1.5,1.5);}x.fillStyle='#f4efd0';x.beginPath();x.arc(96,28,10,0,7);x.fill();}else if(day){x.fillStyle='#fff8d0';x.beginPath();x.arc(30,30,12,0,7);x.fill();}
+  x.fillStyle='#0b1a2a';for(let i=0;i<8;i++){const bw=10+(i*7)%12,bh=30+(i*29)%50;x.fillRect(i*16,h-bh,bw,bh);}x.strokeStyle='#1a2a24';x.lineWidth=6;x.strokeRect(0,0,w,h);x.beginPath();x.moveTo(w/2,0);x.lineTo(w/2,h);x.stroke();});
+ const winG=new THREE.PlaneGeometry(2,1.3),winM=new THREE.MeshBasicMaterial({map:winT}),wins=new THREE.InstancedMesh(winG,winM,3),M4=new THREE.Matrix4(),Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,Math.PI/2,0));
+ [-5.5,-2,1.5].forEach((z,i)=>{M4.compose(new THREE.Vector3(-9.48,1.25,z),Q,new THREE.Vector3(1,1,1));wins.setMatrixAt(i,M4);});S.add(wins);
+ const wo=add(DD.window,new THREE.Object3D(),1.2);wo.mesh.position.set(-9.4,1.25,-2);S.add(wo.mesh);wo.mesh.getWorldPosition(wo.wp);
+ // plants (instanced, low poly)
+ const PL=[[-8.8,-6.2],[-8.8,8.4],[8.2,-1.4],[8.6,4.2],[-1,6.8],[2.2,-6.4]],pot=new THREE.InstancedMesh(new THREE.CylinderGeometry(.28,.22,.42,6),flat(0x3a2a1c),PL.length),leaf=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.48,0),flat(0x1f7a46,new THREE.Color(0x0a2a16)),PL.length);
+ PL.forEach(([x,z],i)=>{M4.makeTranslation(x,.21,z);pot.setMatrixAt(i,M4);M4.compose(new THREE.Vector3(x,.85,z),new THREE.Quaternion(),new THREE.Vector3(1,1.4,1));leaf.setMatrixAt(i,M4);});S.add(pot,leaf);
+ // coffee machine: cups = ticks run today (real, from pulse history)
+ const today=new Date(Date.now()+7200e3).toISOString().slice(0,10),cups=(s?.pulse_history||[]).filter(p=>String(p.time_sast).startsWith(today)).length;
+ const cg=new THREE.Group();cg.position.set(6.6,0,-2.6);cg.rotation.y=2.12;S.add(cg);const ctab=new THREE.Mesh(new THREE.BoxGeometry(1.2,.8,.6),flat(0x1b1410));ctab.position.y=.4;cg.add(ctab);const cm=new THREE.Mesh(new THREE.BoxGeometry(.5,.6,.4),flat(0x2a2a2a));cm.position.set(-.2,1.1,0);cg.add(cm);
+ const cl=new THREE.Mesh(new THREE.BoxGeometry(.12,.06,.02),new THREE.MeshBasicMaterial({color:cups?0x39ff88:0xff3b5c}));cl.position.set(-.2,1.25,.21);cg.add(cl);
+ const cupI=new THREE.InstancedMesh(new THREE.CylinderGeometry(.06,.05,.12,6),flat(0xeeeeee),Math.max(1,Math.min(12,cups)));for(let i=0;i<Math.min(12,cups);i++){M4.makeTranslation(.15+(i%4)*.11,.86,-.15+Math.floor(i/4)*.12);cupI.setMatrixAt(i,M4);}cupI.count=Math.min(12,cups);cg.add(cupI);
+ add(DD.coffee,cm,.6);
+ // cable trays: every desk to the Lab racks (instanced tray segments on the floor)
+ const lab=DESKS.find(d=>d.id==='lab'),segs=[];DESKS.filter(d=>d.id!=='lab'&&!d.board).forEach(d=>{const a=new THREE.Vector3(d.pos[0],.03,d.pos[1]),b=new THREE.Vector3(lab.pos[0],.03,lab.pos[1]);segs.push([a,b]);});
+ const tray=new THREE.InstancedMesh(new THREE.BoxGeometry(1,.03,.1),new THREE.MeshBasicMaterial({color:0x10261c}),segs.length);segs.forEach(([a,b],i)=>{const m=a.clone().lerp(b,.5),L=a.distanceTo(b),ang=Math.atan2(-(b.z-a.z),b.x-a.x);M4.compose(m,new THREE.Quaternion().setFromEuler(new THREE.Euler(0,ang,0)),new THREE.Vector3(L,1,1));tray.setMatrixAt(i,M4);});S.add(tray);
+ // ticker tape wall: real prices already loaded by the app (Kraken pulse + indices), no new requests
+ let PX=pxList();const tt=canvasTex(THREE,1024,64,(x,w,h)=>{x.fillStyle='#020604';x.fillRect(0,0,w,h);x.font='bold 26px monospace';let cx=10;if(!PX.length){x.fillStyle='#6a8';x.fillText('no prices loaded yet: open Overview once, or sign in',10,42);return;}
+  for(const p of PX){const c=p.ch==null?'#9bb':p.ch>=0?'#39ff88':'#ff3b5c';x.fillStyle='#dfe';const t1=`${p.id} ${p.px<10?p.px.toFixed(4):p.px.toLocaleString(undefined,{maximumFractionDigits:2})}`;x.fillText(t1,cx,42);cx+=x.measureText(t1).width+8;x.fillStyle=c;const t2=p.ch==null?'':`${p.ch>=0?'▲':'▼'}${Math.abs(p.ch).toFixed(2)}%`;x.fillText(t2,cx,42);cx+=x.measureText(t2).width+28;if(cx>w)break;}});
+ tt.wrapS=THREE.RepeatWrapping;tt.repeat.set(1,1);const tape=new THREE.Mesh(new THREE.BoxGeometry(.1,.55,12),new THREE.MeshBasicMaterial({map:tt}));tape.position.set(-9.45,2.45,1);
+ tt.center.set(.5,.5);tt.rotation=0;S.add(tape);
+ add(DD.ticker,tape,1.4);
+ // world map wall: markets glow by real activity (|change| of the loaded prices)
+ const SPOT=spots(()=>PX);
+ const wm=canvasTex(THREE,512,256,(x,w,h)=>{x.fillStyle='#03100a';x.fillRect(0,0,w,h);x.fillStyle='#123526';[[.18,.32,.13,.12],[.27,.66,.06,.16],[.5,.3,.07,.08],[.53,.58,.07,.16],[.7,.34,.17,.13],[.83,.72,.06,.06]].forEach(([a,b,c,d])=>{x.beginPath();x.ellipse(a*w,b*h,c*w,d*h,0,0,7);x.fill();});
+  x.strokeStyle='#1d4a36';for(let i=1;i<8;i++){x.beginPath();x.moveTo(i*w/8,0);x.lineTo(i*w/8,h);x.stroke();}x.fillStyle='#39ff88';x.font='bold 16px monospace';x.fillText('MARKETS · glow = real move size',10,20);
+  for(const [n,a,b,f] of SPOT){const v=f(),r=v==null?4:6+Math.min(30,v*12);const g=x.createRadialGradient(a*w,b*h,0,a*w,b*h,r);g.addColorStop(0,v==null?'#445':'#ffd23f');g.addColorStop(1,'rgba(255,210,63,0)');x.fillStyle=g;x.beginPath();x.arc(a*w,b*h,r,0,7);x.fill();x.fillStyle='#cfe';x.font='11px monospace';x.fillText(v==null?n+': no data':`${n.split(' · ')[0]} ${v.toFixed(2)}%`,a*w+8,b*h+r/2+12);}});
+ const map=new THREE.Mesh(new THREE.BoxGeometry(.1,1.6,3.2),new THREE.MeshBasicMaterial({map:wm}));map.position.set(-9.45,1.3,6);map.rotation.y=Math.PI;S.add(map);
+ add(DD.worldmap,map,1.4);
+ // walking bots carry the moving files (one per moving file, instanced)
+ const mov=O.filter(o=>o.kind==='file'&&o.on),NB=mov.length,bb=new THREE.InstancedMesh(new THREE.CapsuleGeometry(.12,.22,2,6),flat(0x9fe8c4,new THREE.Color(0x0a2a1c)),Math.max(1,NB));bb.count=NB;S.add(bb);
+ const eye=new THREE.InstancedMesh(new THREE.BoxGeometry(.16,.04,.02),new THREE.MeshBasicMaterial({color:0x39ff88}),Math.max(1,NB));eye.count=NB;S.add(eye);
+ X.walk=(t,still)=>{for(let i=0;i<NB;i++){const o=mov[i],p=o.mesh.position;const bob=still?0:Math.abs(Math.sin(t*9+i))*.05;M4.makeTranslation(p.x,.26+bob,p.z);bb.setMatrixAt(i,M4);M4.makeTranslation(p.x,.4+bob,p.z+.12);eye.setMatrixAt(i,M4);}bb.instanceMatrix.needsUpdate=true;eye.instanceMatrix.needsUpdate=true;};
+ X.tape=(dt,still)=>{if(!still)tt.offset.x=(tt.offset.x+dt*.02)%1;};}
+
+function decorDefs(){const s=G&&G.s,hr=sastHour(),day=hr>=6.5&&hr<18.5,dusk=(hr>=5.5&&hr<6.5)||(hr>=18.5&&hr<19.5),skyC=day?0x7fc4ff:dusk?0xff8a5c:0x0a1430;
+ const today=new Date(Date.now()+7200e3).toISOString().slice(0,10),cups=(s?.pulse_history||[]).filter(p=>String(p.time_sast).startsWith(today)).length;let PX=pxList();const SPOT=spots(()=>PX);
+ return{window:{id:'window',role:'WINDOW',name:`${day?'Day':dusk?'Dusk':'Night'} in Johannesburg`,col:skyC,tab:'overview',tip:`SAST ${String(Math.floor(hr)).padStart(2,'0')}:${String(Math.round(hr%1*60)).padStart(2,'0')}`,job:'The windows follow the real time of day in South Africa (SAST): day 06:30–18:30, dusk around sunrise and sunset, night otherwise. Crypto never closes, so the office never sleeps.',lines:()=>[`it is ${String(Math.floor(sastHour())).padStart(2,'0')}:${String(Math.round(sastHour()%1*60)).padStart(2,'0')} SAST`,'markets: crypto 24/7 · US indices trade 15:30–22:00 SAST']},coffee:{id:'coffee',role:'COFFEE',name:'Coffee machine',col:0xc48a5a,tab:'overview',tip:`${cups} cups today = ${cups} ticks`,job:'One cup per tick the box ran today (SAST), counted from the published pulse history. Green light: the box has ticked today.',lines:()=>[`<b>${cups}</b> cups today · one per tick in the published pulse history`,cups?'':'<span class="dim">no tick recorded today yet</span>']},ticker:{id:'ticker',role:'TICKER',name:'Ticker tape',col:0x39ff88,tab:'charts',tip:'real prices from the loaded state',job:'Live prices the app has already loaded (Kraken pulse prices with the 6 h change, and the indices with the day change). It never fetches anything by itself.',lines:()=>{PX=pxList();return PX.length?PX.map(p=>`${esc(p.id)} ${p.px} · ${p.ch==null?'—':(p.ch>=0?'+':'')+p.ch.toFixed(2)+'%'} <span class="dim">(${p.src})</span>`):['<span class="dim">no prices loaded yet</span>'];}},worldmap:{id:'worldmap',role:'WORLD MAP',name:'Markets world map',col:0xffd23f,tab:'charts',tip:'glow = size of the real move',job:'Each market glows by the size of its latest real move in the data the app already loaded: crypto by the average 6 h change across the bot pairs, US indices and gold by the day change.',lines:()=>SPOT.map(([n,,,f])=>{const v=f();return `${esc(n)}: ${v==null?'<span class="dim">no data loaded</span>':v.toFixed(2)+'% average move'}`;})},cups,skyC,day,dusk,hr,SPOT,getPX:()=>PX};}
+function spots(gp){const PX0=()=>gp();return [['BTC/crypto',.5,.42,()=>{const p=PX0().filter(p=>p.src==='Kraken 6h'&&p.ch!=null);return p.length?p.reduce((a,b)=>a+Math.abs(b.ch),0)/p.length:null;}],['New York · SPX/NDX/DJI',.27,.36,()=>{const p=PX0().filter(p=>['SPX','NDX','DJI'].includes(p.id));return p.length?p.reduce((a,b)=>a+Math.abs(b.ch||0),0)/p.length:null;}],['London · Gold',.48,.3,()=>{const p=PX0().find(p=>p.id==='XAU');return p?Math.abs(p.ch||0):null;}]];}
