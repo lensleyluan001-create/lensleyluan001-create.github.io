@@ -1,11 +1,11 @@
-// NORTHLINE shell v2: intro film, login (Netlify Identity), command palette, prefs (Blobs), feedback (Forms).
+// NORTHLINE shell v2: intro film, login (Supabase magic link, invite-only), command palette, prefs + feedback (Supabase).
 // Presentation/workflow only. Does not touch engine, bot, data or /api reads.
 (()=>{
 const Q=new URLSearchParams(location.search),$=s=>document.querySelector(s),h=(t,a={},c='')=>{const e=document.createElement(t);for(const k in a)e.setAttribute(k,a[k]);e.innerHTML=c;return e;};
-const ID='/.netlify/identity',TK='nl_auth',SS=sessionStorage,LS=localStorage;
-const hash=new URLSearchParams(location.hash.slice(1));const cbType=['invite_token','recovery_token','confirmation_token'].find(k=>hash.get(k));
-let idOn=null;
-const authed=()=>{try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t)return false;if(t.mode==='preview')return idOn===false;return t.exp>Date.now()/1000;}catch{return false;}};
+const SB=window.NL_SB||{},AU=SB.url+'/auth/v1',TK='nl_auth',SS=sessionStorage,LS=localStorage;
+const hash=new URLSearchParams(location.hash.slice(1));const cbErr=hash.get('error_description');
+let idOn=true;
+const authed=()=>{try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t)return false;if(t.mode!=='supabase')return false;return t.exp>Date.now()/1000;}catch{return false;}};
 let guideWait=false;const lock=on=>{document.body.classList.toggle('locked',on);if(!on&&guideWait){guideWait=false;setTimeout(()=>{const g=document.querySelector('#guide');g&&!g.open&&g.showModal();},600);}};
 (()=>{const g=document.querySelector('#guide');if(!g)return;const o=g.showModal.bind(g);g.showModal=()=>{if(document.body.classList.contains('locked')){guideWait=true;return;}o();};})();
 
@@ -39,11 +39,11 @@ function intro(done){
 }
 
 /* ---------- LOGIN ---------- */
-async function idSettings(){try{const r=await fetch(ID+'/settings');idOn=r.ok;}catch{idOn=false;}return idOn;}
-function saveTok(j){const p=JSON.parse(atob(j.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));LS.setItem(TK,JSON.stringify({mode:'identity',token:j.access_token,refresh:j.refresh_token,exp:p.exp,email:p.email,sub:p.sub}));}
-async function refresh(){try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t?.refresh||t.mode!=='identity')return false;const r=await fetch(ID+'/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(t.refresh)});if(!r.ok)return false;saveTok(await r.json());return true;}catch{return false;}}
+function saveTok(j){const p=JSON.parse(atob(j.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));LS.setItem(TK,JSON.stringify({mode:'supabase',token:j.access_token,refresh:j.refresh_token,exp:p.exp,email:p.email,sub:p.sub}));}
+function fromHash(){const at=hash.get('access_token');if(!at)return false;saveTok({access_token:at,refresh_token:hash.get('refresh_token')});history.replaceState(null,'',location.pathname+location.search);return true;}
+async function refresh(){try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t?.refresh||t.mode!=='supabase')return false;const r=await fetch(AU+'/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({refresh_token:t.refresh})});if(!r.ok)return false;saveTok(await r.json());return true;}catch{return false;}}
+const PENDING='Invite pending: this email has no confirmed invite yet. Open the invite email from Supabase first, then come back and request a sign-in link.';
 function login(done){
- const setPw=cbType==='invite_token'||cbType==='recovery_token';
  const el=h('div',{id:'nlLogin'},`<div class="lg-wrap">
  <div class="lg-pitch"><div class="lg-brand">NORTHLINE <b>▲</b> SUPER TRADING OS</div>
   <h1>One desk for every signal the bot sees, and <span class="grad">every lesson it learns.</span></h1>
@@ -58,36 +58,25 @@ function login(done){
   </div>
   <div class="honest"><b>Honest status:</b> paper trading only, no live money. The bot is learning and no strategy is proven yet. This is a research desk, not financial advice.</div>
  </div>
- <form class="lg-card" id="lgForm" autocomplete="on"><h2>${setPw?'Set your password':'Sign in'}</h2><div class="sub" id="lgSub">Invite-only. Owner access.</div>
-  <div id="lgEmailRow"><label for="lgEmail">Email</label><input id="lgEmail" type="email" autocomplete="username" required></div>
-  <label for="lgPw">Password</label><input id="lgPw" type="password" autocomplete="${setPw?'new-password':'current-password'}" required minlength="6">
-  <button class="nlbtn pri" type="submit" id="lgGo">${setPw?'Save & enter':'Enter the OS'}</button>
+ <form class="lg-card" id="lgForm" autocomplete="on"><h2>Sign in</h2><div class="sub" id="lgSub">Invite-only. Owner access. We email you a one-time sign-in link.</div>
+  <div id="lgEmailRow"><label for="lgEmail">Email</label><input id="lgEmail" type="email" autocomplete="username" required value="tradebotz.za@gmail.com"></div>
+  <button class="nlbtn pri" type="submit" id="lgGo">Email me a sign-in link</button>
   <div class="lg-msg" id="lgMsg"></div>
-  <div class="lg-foot">Secured by Netlify Identity · registration by invite only</div></form></div>`);
+  <div class="lg-foot">Secured by Supabase Auth · registration by invite only</div></form></div>`);
  document.body.append(el);lock(true);
  const msg=(t,c='')=>{const m=el.querySelector('#lgMsg');m.textContent=t;m.className='lg-msg '+c;};
- const ok=()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>{el.remove();lock(false);done();},380);};
- if(setPw)el.querySelector('#lgEmailRow').style.display='none',el.querySelector('#lgEmail').required=false;
- if(idOn===false){ // Identity not enabled on the project yet: owner preview, no lock-out.
-  el.querySelector('#lgSub').innerHTML='Netlify Identity is not switched on for this project yet, so sign-in runs in <b>owner preview</b>. Once it is enabled, this form checks your real account.';
-  el.querySelector('#lgPw').required=false;el.querySelector('#lgEmail').required=false;el.querySelector('#lgEmail').value='lensleyluan001@gmail.com';
- }
- el.querySelector('#lgForm').onsubmit=async e=>{e.preventDefault();const email=el.querySelector('#lgEmail').value.trim(),pw=el.querySelector('#lgPw').value;
-  if(idOn===false){LS.setItem(TK,JSON.stringify({mode:'preview',email}));ok();return;}
-  msg('Checking…');
-  try{let r;
-   if(setPw){r=await fetch(ID+'/verify',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:hash.get(cbType),type:cbType==='invite_token'?'signup':'recovery',password:pw})});
-    if(r.ok&&cbType==='recovery_token'){const j=await r.json();await fetch(ID+'/user',{method:'PUT',headers:{'content-type':'application/json',authorization:'Bearer '+j.access_token},body:JSON.stringify({password:pw})});saveTok(j);}
-    else if(r.ok)saveTok(await r.json());
-   }else r=await fetch(ID+'/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:'grant_type=password&username='+encodeURIComponent(email)+'&password='+encodeURIComponent(pw)}),r.ok&&saveTok(await r.json());
-   if(!r.ok){const j=await r.json().catch(()=>({}));msg(j.error_description||j.msg||'Sign-in failed','err');return;}
-   history.replaceState(null,'',location.pathname+location.search);msg('Welcome back.','ok');ok();
+ if(cbErr)msg(/expired|invalid/i.test(cbErr)?'That link expired or was already used. Request a new one.':cbErr,'err');
+ el.querySelector('#lgForm').onsubmit=async e=>{e.preventDefault();const email=el.querySelector('#lgEmail').value.trim();msg('Sending…');
+  try{const r=await fetch(AU+'/otp',{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({email,create_user:false,options:{emailRedirectTo:location.origin+'/'}})});
+   if(r.ok){msg('Check your inbox: the sign-in link opens the OS on this device.','ok');return;}
+   const j=await r.json().catch(()=>({}));const t=(j.msg||j.error_description||j.message||'')+'';
+   msg(/signup|not allowed|not found|otp_disabled|user/i.test(t)||r.status===422||r.status===400?PENDING:/rate|seconds/i.test(t)||r.status===429?'Too many requests. Wait a minute, then try again.':(t||'Could not send the link'),'err');
   }catch{msg('Network error, try again','err');}};
- setTimeout(()=>el.querySelector(setPw||idOn===false?'#lgPw':'#lgEmail').focus(),200);
+ setTimeout(()=>el.querySelector('#lgEmail').focus(),200);
 }
 function logout(){LS.removeItem(TK);SS.removeItem('nl_intro');location.reload();}
 
-/* ---------- PREFS (Netlify Blobs via /api/prefs) ---------- */
+/* ---------- PREFS (Supabase prefs table via /api/prefs; localStorage first) ---------- */
 const devKey=()=>{let k=LS.getItem('nl_dev');if(!k){k='d'+crypto.getRandomValues(new Uint32Array(3)).join('');LS.setItem('nl_dev',k);}return k;};
 let P={compact:false};
 const pkey=()=>{try{const t=JSON.parse(LS.getItem(TK)||'null');return t?.sub?'u'+t.sub.replace(/[^a-z0-9]/gi,''):devKey();}catch{return devKey();}};
@@ -95,11 +84,10 @@ async function loadPrefs(){try{const c=LS.getItem('nl_prefs');if(c)P={...P,...JS
 function savePrefs(){LS.setItem('nl_prefs',JSON.stringify(P));fetch('/api/prefs?k='+pkey(),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(P)}).catch(()=>{});}
 function applyPrefs(){document.body.classList.toggle('compact',!!P.compact);}
 
-/* ---------- FEEDBACK (Netlify Forms) ---------- */
-function feedback(){let d=$('#nlFb');if(!d){d=h('dialog',{id:'nlFb'},`<form method="dialog" id="fbF"><h2>Send feedback</h2><p class="dim small">Goes to the Netlify Forms inbox for this project.</p><textarea name="message" required placeholder="What should look or work better?"></textarea><p style="display:flex;gap:8px;justify-content:flex-end"><button class="nlbtn" value="cancel" formnovalidate>Cancel</button><button class="nlbtn pri" id="fbSend" value="send">Send</button></p><div class="dim small" id="fbMsg"></div></form>`);document.body.append(d);
+/* ---------- FEEDBACK (Supabase feedback table) ---------- */
+function feedback(){let d=$('#nlFb');if(!d){d=h('dialog',{id:'nlFb'},`<form method="dialog" id="fbF"><h2>Send feedback</h2><p class="dim small">Saved privately to the NORTHLINE feedback inbox.</p><textarea name="message" required placeholder="What should look or work better?"></textarea><p style="display:flex;gap:8px;justify-content:flex-end"><button class="nlbtn" value="cancel" formnovalidate>Cancel</button><button class="nlbtn pri" id="fbSend" value="send">Send</button></p><div class="dim small" id="fbMsg"></div></form>`);document.body.append(d);
  d.querySelector('#fbSend').onclick=async e=>{e.preventDefault();const ta=d.querySelector('textarea');if(!ta.value.trim())return;
-  const body=new URLSearchParams({'form-name':'feedback',message:ta.value,page:location.pathname,'bot-field':''});
-  const r=await fetch('/',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body}).catch(()=>null);
+  const r=await fetch('/api/feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:ta.value,page:location.pathname})}).catch(()=>null);
   d.querySelector('#fbMsg').textContent=r&&r.ok?'Thanks, saved.':'Could not send right now.';if(r&&r.ok){ta.value='';setTimeout(()=>d.close(),900);}};}
  d.showModal();}
 
@@ -130,7 +118,7 @@ addEventListener('keydown',e=>{if(document.body.classList.contains('locked'))ret
 
 /* ---------- boot ---------- */
 async function boot(){hints();layout();loadPrefs();
- await idSettings();if(!authed()&&idOn)await refresh();
+ fromHash();if(!authed())await refresh();
  if(authed()){lock(false);return;}
  intro(()=>login(()=>{loadPrefs();layout();}));}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
