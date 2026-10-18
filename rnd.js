@@ -7,10 +7,12 @@ let INB=null,CLOUD={ok:false,why:'',ideas:null,reqs:null},ST=null,LABS=null,load
 const ST_COL={idea:'c',testing:'a',passed:'g',rejected:'r'},ST_TXT={idea:'IDEA',testing:'TESTING',passed:'PASSED',rejected:'REJECTED'};
 const sast=ts=>new Date((ts+7200)*1000).toISOString().slice(0,16).replace('T',' ');
 const title=id=>{const s=id.replace(/^LR-(\w+)-/,(m,n)=>'LR-'+n+' · ').replace(/-/g,' ');return s.replace(/· (\w)/,(m,c)=>'· '+c.toUpperCase());};
+let SQD=null;
 export async function show(){const box=$('#rnd');if(!box.dataset.init){box.dataset.init=1;box.innerHTML=shell();wire();}
  if(Date.now()-loadedAt>60000){loadedAt=Date.now();try{ST=await (await fetch('/api/state',{cache:'no-store'})).json();}catch{ST=null;}
   try{LABS=await (await fetch('/api/lab?key=summary')).json();}catch{LABS=null;}
   try{const r=await fetch('/api/lab?key=inbox_status');INB=r.ok?await r.json():null;}catch{INB=null;}
+  try{const r=await fetch('/api/lab?key=squad');SQD=r.ok?await r.json():null;}catch{SQD=null;}
   await cloudLoad();render();}}
 const tokn=()=>{try{const t=JSON.parse(localStorage.getItem('nl_auth')||'null');return t&&t.mode==='supabase'&&t.exp>Date.now()/1000+30?t.token:null}catch{return null}};
 async function sb(path,o={}){const s=window.NL_SB,t=tokn();if(!s||!t)throw new Error('not signed in');const r=await fetch(s.url+'/rest/v1/'+path,{...o,cache:'no-store',headers:{apikey:s.key,authorization:'Bearer '+t,'content-type':'application/json',...(o.headers||{})}});if(!r.ok)throw new Error(path.split('?')[0]+' table '+(r.status===404?'not set up yet':'HTTP '+r.status));const x=await r.text();return x?JSON.parse(x):null;}
@@ -21,7 +23,7 @@ async function cloudLoad(){try{CLOUD.ideas=await sb('ideas?select=*&order=create
 function shell(){return`<div class="rn">
 <div class="panel rn-hero"><div class="rn-t">NORTHLINE//<b>R&amp;D FACILITY</b></div><div class="br-honest">PAPER RESEARCH · NOTHING HERE TRADES OR SETS SIZE.</div><div id="rnStat" class="dim small">loading lab…</div>
  <nav class="rn-nav"><a href="#rn-ideas">Idea board</a><a href="#rn-bench">Test bench</a><a href="#rn-tools">Tool workshop</a><a href="#rn-grad">Graduation path</a></nav></div>
-<div class="panel" id="rn-grad"><div class="ph"><b class="c">GRADUATION PATH</b><span class="dim small">idea → lab → brain → bot → booked · every stage has a hard gate</span></div><div id="rnG" class="rn-grad"></div></div>
+<div class="panel" id="rn-grad"><div class="ph"><b class="c">GRADUATION PATH</b><span class="dim small">idea → lab → brain → bot → booked · every stage has a hard gate</span></div><div id="rnG" class="rn-grad"></div><div id="rnSq" class="rn-sq"></div></div>
 <div class="panel" id="rn-ideas"><div class="ph"><b>IDEA BOARD</b><span class="dim small" id="rnSync"></span><span class="rn-flt" id="rnF"></span></div><div id="rnI" class="rn-cards"></div>
  <details class="adv"><summary>＋ Add your own idea</summary><form id="rnAdd" class="rn-form"><input name="t" maxlength="80" placeholder="Idea title, e.g. London open breakout on gold" required><textarea name="n" maxlength="400" rows="2" placeholder="Hypothesis: why should this beat 0.56% round-trip costs?"></textarea><button class="rn-btn">Add to board</button></form></details></div>
 <div class="panel" id="rn-bench"><div class="ph"><b class="a">TEST BENCH</b><span class="dim small">strict results already computed by the lab · read-only</span></div>
@@ -62,7 +64,7 @@ function ideas(){const sl=SL(),rs=sl.research||{},lb=sl.leaderboard||[],seen=J(L
  const v=[...out.values()];return[...v.filter(i=>i.own),...v.filter(i=>!i.own)];}
 function render(){if(!ST||ST.error){$('#rnStat').innerHTML='<span class="r">Lab data unavailable (sign in, or the bot has not published yet).</span>';}
  else{const sl=SL();$('#rnStat').innerHTML=`lab ${(sl.variants_tested||0).toLocaleString()} variants tested of ${(sl.family_size||0).toLocaleString()} (${sl.coverage_pct??0}%) · ${(sl.trusted||[]).length} promoted · last batch ${esc(sl.last_run_sast||'—')} SAST${(sl.trusted||[]).length?'':' · <b class="a">no edge yet</b>'}`;}
- grad();cards();const I=ideas();$('#rnIdea').innerHTML=I.map(i=>`<option value="${esc(i.id)}">${esc(ST_TXT[i.status])} · ${esc(i.title)}</option>`).join('');if(!sel.idea||!I.find(i=>i.id===sel.idea))sel.idea=(I.find(i=>i.rows.length)||I[0]||{}).id;if(sel.idea)$('#rnIdea').value=sel.idea;bench();tools();queue();}
+ grad();squad();cards();const I=ideas();$('#rnIdea').innerHTML=I.map(i=>`<option value="${esc(i.id)}">${esc(ST_TXT[i.status])} · ${esc(i.title)}</option>`).join('');if(!sel.idea||!I.find(i=>i.id===sel.idea))sel.idea=(I.find(i=>i.rows.length)||I[0]||{}).id;if(sel.idea)$('#rnIdea').value=sel.idea;bench();tools();queue();}
 function cards(){$('#rnSync').innerHTML=CLOUD.ok?'☁ your ideas and run requests sync to your private Supabase':'saved in this browser · cloud sync off ('+esc(CLOUD.why||'not signed in')+')';const I=ideas(),f=$('#rnF').dataset.f||'all',cnt=s=>I.filter(i=>s==='all'||i.status===s).length;
  $('#rnF').innerHTML=['all','idea','testing','passed','rejected'].map(s=>`<button data-f="${s}" class="${f===s?'on':''}">${s==='all'?'ALL':ST_TXT[s]} ${cnt(s)}</button>`).join('');
  const L=I.filter(i=>f==='all'||i.status===f);
@@ -120,3 +122,18 @@ function queue(){const Q=J(LSQ,[]),C=CLOUD.ok?CLOUD.reqs||[]:[];
  const lc=Q.map((q,i)=>`<div class="rn-qi"><span><b>${esc(q.title)}</b> · ${esc(q.markets.length?q.markets.join(', '):'all markets')} · ${esc(q.timeframe)} · ${esc(q.requested_sast)} SAST</span><span><button data-a="cp" data-i="${i}" class="rn-x">Copy request</button><button data-a="del" data-i="${i}" class="rn-x">✕</button></span></div>`).join('');
  $('#rnQ').innerHTML=(C.length?`<div class="rn-q"><div class="ph"><b class="a">RUN REQUESTS · private Supabase queue</b><span class="dim small">the box worker turns queued rows into lab inbox specs on the next tick or by hand</span></div>${cl}</div>`:'')
   +(Q.length?`<div class="rn-q"><div class="ph"><b class="a">QUEUED REQUESTS · this browser only · not executed</b><button data-a="clr" class="rn-x">clear all</button></div>${lc}</div>`:'');}
+
+// PAPER squad (read-only lab row 'squad', written by the box tick). Honest: shows only what the row says.
+function squad(){const el=$('#rnSq');if(!el)return;const q=SQD&&Array.isArray(SQD.bots)?SQD:null;
+ if(!q){el.innerHTML=`<div class="ph"><b class="a">PAPER SQUAD · S1–S6</b><span class="dim small">no squad data published yet (lab row 'squad' missing or not signed in)</span></div>`;return;}
+ const st=q.stats||{},m=v=>v==null?'—':'$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),S0=q.start||1000,DL=q.death_line||500,dth=q.deaths||[];
+ const sr=s=>{const t=st[s.id];const fw=t&&t.n?`<b>${t.n}</b> fwd · win ${(100*(t.win_rate??t.wins/t.n)).toFixed(0)}% · avg R <b class="${t.R>=0?'g':'r'}">${(t.R/t.n).toFixed(2)}</b>`:'<span class="dim">no trades yet</span>';
+  const lab=s.tested?`lab OOS n ${s.oos_n??'—'} · ΣR ${s.oos_total_R??'—'}`:'untested in lab';return `<li><span class="rn-sqid">${esc(s.family||'?')} · ${esc(s.tf||'')}</span> ${fw}<span class="dim small"> · ${esc(lab)}</span></li>`;};
+ const bots=q.bots.map(b=>{const eq=b.equity??b.cash,ch=eq-S0,d=dth.filter(x=>(x.bot||x.id)===b.id).length,lives=(b.life||1)-1;
+  return `<div class="rn-sqb"><div class="rn-sqh"><b>${esc(b.id)}</b><span class="br-paper">PAPER</span><span class="dim small">life ${b.life||1} · deaths ${Math.max(d,lives)}</span></div>
+  <div class="rn-big">${m(eq)}</div><div class="small ${ch>0?'g':ch<0?'r':'dim'}">${ch>=0?'+':''}${m(ch).replace('$-','-$')} vs ${m(S0)} start · death below ${m(DL)}</div>
+  <div class="small">${(b.open||[]).length?`${b.open.length} open: `+b.open.map(p=>`${esc(p.m)} @ ${p.entry}`).join(', '):'<span class="dim">no open positions</span>'} · ${b.closed||0} closed this life</div>
+  <ul class="rn-sql">${(b.strats||[]).map(sr).join('')}</ul></div>`;}).join('');
+ const tot=q.bots.reduce((a,b)=>a+(b.equity??b.cash),0),n=Object.values(st).reduce((a,t)=>a+(t.n||0),0);
+ el.innerHTML=`<div class="ph"><b class="a">PAPER SQUAD · S1–S6</b><span class="dim small">PAPER ONLY · unproven strategies on purpose · forward evidence only, never books for the bot · updated ${esc(q.updated_sast||'—')} SAST</span></div>
+ <div class="small rn-sqsum">squad paper equity <b>${m(tot)}</b> of ${m(S0*q.bots.length)} · ${n?n+' closed paper trades':'no trades yet'} · ${dth.length} deaths logged</div><div class="rn-sqg">${bots}</div>`;}

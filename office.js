@@ -13,24 +13,28 @@ const DESKS=[
  {id:'exec',name:'Execution',role:'EXECUTION',pos:[4.6,-1.2],col:0x39ff88,tab:'bot',job:'Runs the paper bot each tick: pulse engine verdicts, entries, SL/TP. Kraken spot paper for longs, simulated ledger for shorts.'},
  {id:'kraken',name:'Kraken paper account',role:'KRAKEN',pos:[7.2,1.2],col:0x7f6cff,tab:'bot',job:'The paper account the bot trades against (Kraken public prices, no real money).',vault:1},
  {id:'desk',name:'Desk',role:'DESK',pos:[4.6,2.6],col:0x3ad7ff,tab:'proof',job:'Books every trade into the hash-chained proof ledger and writes the daily report.'},
+ {id:'squad',name:'Paper squad S1–S6',role:'SQUAD',pos:[-7.4,0.7],col:0xff8a3d,tab:'rnd',job:'Six PAPER bots trading unproven lab specs on purpose, $1,000 each, die below $500 and respawn with the next specs. Forward evidence only; nothing here books for the bot.'},
  {id:'dev',name:'Lulu Dev',role:'DEV',pos:[-2.3,4.6],col:0xff5ec8,tab:'brain',job:'Builds the OS: look and workflow only. Never touches the engine, sizing, risk or tick.'}];
-const FLOWS=[['research','lab','ideas'],['lab','risk','lab results'],['risk','booked','sign-off'],['booked','exec','booked strategies'],['exec','kraken','orders'],['kraken','desk','fills / trades'],['desk','alex','daily report']];
+const FLOWS=[['research','lab','ideas'],['lab','risk','lab results'],['risk','booked','sign-off'],['booked','exec','booked strategies'],['exec','kraken','orders'],['kraken','desk','fills / trades'],['desk','alex','daily report'],['lab','squad','unproven specs · paper, skips the gates','squad']];
+const FON=i=>G?.flows[FLOWS[i][3]||FLOWS[i][0]];
+let SQD=null;
 export async function show(){const box=$('#office');if(!box.dataset.init){box.dataset.init=1;box.innerHTML=shell();wire();}
  if(Date.now()-loadedAt>60000){loadedAt=Date.now();try{const r=await fetch('/api/state',{cache:'no-store'});ST=r.ok?await r.json():null;}catch{ST=null;}
-  try{const r=await fetch('/api/lab?key=inbox_status');INB=r.ok?await r.json():null;}catch{INB=null;}derive();}
+  try{const r=await fetch('/api/lab?key=inbox_status');INB=r.ok?await r.json():null;}catch{INB=null;}
+  try{const r=await fetch('/api/lab?key=squad');SQD=r.ok?await r.json():null;}catch{SQD=null;}derive();}
  if(!mode)await start();else{refresh();kick();}}
 function shell(){return`<div class="of"><div class="panel of-hero"><div id="ofStage" class="of-stage"></div><div class="of-ov"><div class="br-t">NORTHLINE//<b>OFFICE</b></div><div class="br-honest">PAPER ONLY · LIVE FROM THE PUBLISHED STATE</div><div id="ofStat" class="dim small">opening the office…</div></div>
  <div id="ofCard" class="of-card" hidden></div><div class="br-ctl of-ctl"><span class="dim" id="ofHint">tap a desk · drag to turn · pinch or scroll to zoom</span><button id="of2d" type="button">2D</button></div><div id="ofLabels" class="of-labels"></div></div>
  <div class="panel"><div class="ph"><b class="c">WORK FLOW</b><span class="dim small">derived from the latest state · gates shown honestly</span></div><div id="ofFlow" class="of-flow"></div></div></div>`;}
 function wire(){$('#of2d').onclick=()=>{if(mode==='3d'){stop3d();mode2d('switched by you');}else start(true);};
- $('#ofCard').onclick=e=>{const a=e.target.closest('[data-go]');if(a){window.go&&window.go(a.dataset.go);}if(e.target.closest('.of-x')){pinned=null;$('#ofCard').hidden=true;}};}
+ $('#ofCard').onclick=e=>{const a=e.target.closest('[data-go]');if(a){window.go&&window.go(a.dataset.go);const sec=a.dataset.sec;if(sec){let k=0;const t=setInterval(()=>{const el=document.getElementById(sec);if(el&&el.offsetHeight){el.scrollIntoView({block:'start',behavior:'smooth'});clearInterval(t);}else if(++k>40)clearInterval(t);},100);}}if(e.target.closest('.of-x')){pinned=null;$('#ofCard').hidden=true;}};}
 // ---------- data -> desk status (honest) ----------
 function derive(){const s=ST&&!ST.error?ST:null,sl=s?.strategy_lab||{},b=s?.brain||{},ch=s?.challenge||{},h=s?.bot_health||{},st=s?.stats||{},tr=s?.proof?.all_trades||[],last=tr[tr.length-1],rf=h.risk_fuel||{};
  const specs=Object.entries(INB?.specs||{}),gen=INB?.generator,lastV=specs.filter(([,v])=>v.verdict_sast).sort((a,b)=>b[1].verdict_sast.localeCompare(a[1].verdict_sast))[0];
  const booked=[...((sl.lab_rules||{}).trusted||[]),...((s?.rebuild_candidates||{}).candidates||[])],lrun=sl.last_run_sast?Date.parse(sl.last_run_sast.replace(' ','T')+':00+02:00'):0,running=Date.now()-lrun<45*60000;
  const verd=Object.values(s?.last_bot_pulse?.verdicts||{}),aside=verd.filter(v=>v==='STAND_ASIDE').length,lastTs=last?Date.parse(last.time_SAST.replace(' ','T')+':00+02:00'):0;
  const none='<span class="dim">nothing in the published data for this</span>';
- G={s,running,booked,flows:{research:specs.length>0||!!gen,lab:(sl.trusted||[]).length>0,risk:booked.length>0,booked:booked.length>0,exec:(ch.open_positions||[]).length>0||Date.now()-lastTs<6*3600e3,kraken:Date.now()-lastTs<24*3600e3,desk:false},
+ G={s,running,booked,flows:{research:specs.length>0||!!gen,lab:(sl.trusted||[]).length>0,risk:booked.length>0,booked:booked.length>0,exec:(ch.open_positions||[]).length>0||Date.now()-lastTs<6*3600e3,kraken:Date.now()-lastTs<24*3600e3,desk:false,squad:!!(SQD?.bots||[]).some(b=>(b.strats||[]).length)},
  st:{alex:s?[`bot ${esc(ch.version||'—')} · ${s.mode||'PAPER'} · live money ${s.live_money?'<b class="r">ON</b>':'off'}`,`last tick ${sast(h.last_tick_ts)} SAST · publish: ${esc(h.last_publish_status||'—')} · engine ${h.engine_check?.match?'<b class="g">match</b>':'<b class="r">check</b>'}`,'No per-agent activity log is published; this shows the bot run Alex leads.']:null,
   research:specs.length||gen?[`${specs.length} hand-written specs · ${gen?gen.total.toLocaleString()+' generated':'no generator data'}`,lastV?`last verdict: <b>${esc(lastV[0])}</b> ${esc(lastV[1].verdict||lastV[1].status)} (${esc(lastV[1].verdict_sast)} SAST)`:none,`${specs.filter(([,v])=>/^FAIL/.test(v.verdict||'')).length} FAIL · ${specs.filter(([,v])=>/^PASS/.test(v.verdict||'')).length} PASS`]:null,
   lab:sl.variants_tested!=null?[`${sl.variants_tested.toLocaleString()} / ${(sl.family_size||0).toLocaleString()} variants tested (${sl.coverage_pct}%)`,`last batch ${esc(sl.last_run_sast)} SAST · ${running?'<b class="g">sweep running</b>':'idle'}`,`${(sl.trusted||[]).length} promoted${(sl.trusted||[]).length?'':' · <b class="a">no edge yet</b>'}${gen?` · generator ${gen.tested.toLocaleString()} tested, ${gen.passed} PASS`:''}`]:null,
@@ -39,12 +43,13 @@ function derive(){const s=ST&&!ST.error?ST:null,sl=s?.strategy_lab||{},b=s?.brai
   exec:s?[`pulse ${esc(s.last_bot_pulse?.time_sast||'—')} SAST: ${aside}/${verd.length} pairs STAND ASIDE`,`${(ch.open_positions||[]).length} open positions · rules: ${esc(s.bot?.entry||'')}`.slice(0,220),last?`last action: <b>${esc(last.action)}</b> ${esc(last.pair)} @ ${esc(last.price)} (${esc(last.time_SAST)} SAST, ${esc(last.version)})`:none]:null,
   kraken:s?[`equity $${(ch.kraken_equity_usd??ch.equity_usd??0).toFixed(2)} (paper) · start $${ch.start_usd??'—'}`,`${(ch.open_positions||[]).length} open · ${st.closed_trades||0} closed this version`,`prices: Kraken public REST · no real orders`]:null,
   desk:s?[`${s.proof?.trade_count??tr.length} trades in the proof ledger · chain head ${esc(String(s.proof?.chain_head||'').slice(0,10))}…`,last?`last booked: ${esc(last.action)} ${esc(last.pair)} pnl ${esc(last.pnl_usd||'open')} (${esc(last.time_SAST)} SAST)`:none,`daily report: ${none}`]:null,
+  squad:sqCard(),
   dev:null}};
  const n=FLOWS.filter(([a])=>G.flows[a]).length;$('#ofStat').innerHTML=s?`state ${sast(s.generated_at)} SAST · ${n}/${FLOWS.length} flows moving · ${booked.length?booked.length+' booked':'none booked yet'}`:'<span class="r">No data: sign in to load the office.</span>';
  flowPanel();}
-function flowPanel(){const name=id=>DESKS.find(d=>d.id===id).name;$('#ofFlow').innerHTML=FLOWS.map(([a,b,w])=>{const on=G.flows[a];return`<div class="of-f ${on?'on':''}"><span>${esc(name(a))}</span><i><em></em></i><span>${esc(name(b))}</span><small>${esc(w)} · ${on?'moving':a==='lab'?'gate closed: 0 promoted':a==='risk'||a==='booked'?'nothing to pass yet':a==='desk'?'no report published':'idle'}</small></div>`;}).join('');}
+function flowPanel(){const name=id=>DESKS.find(d=>d.id===id).name;$('#ofFlow').innerHTML=FLOWS.map(([a,b,w],i)=>{const on=FON(i);return`<div class="of-f ${on?'on':''}"><span>${esc(name(a))}</span><i><em></em></i><span>${esc(name(b))}</span><small>${esc(w)} · ${on?'moving':a==='lab'?'gate closed: 0 promoted':a==='risk'||a==='booked'?'nothing to pass yet':a==='desk'?'no report published':'idle'}</small></div>`;}).join('');}
 function cardHtml(d){const L=G&&G.st[d.id];return`<button class="of-x" aria-label="close">✕</button><div class="of-cr" style="color:#${d.col.toString(16).padStart(6,'0')}">${d.role}</div><h4>${esc(d.name)}</h4><p class="dim small">${esc(d.job)}</p>
- <div class="of-cs">${L?L.map(x=>`<div>${x}</div>`).join(''):'<div class="dim">The published data has nothing for this bot yet: no status or last action to show.</div>'}</div><button class="rn-btn" data-go="${d.tab}">Open ${esc({overview:'Overview',rnd:'R&D',bot:'Bot',proof:'Proof',brain:'Brain'}[d.tab])} →</button>`;}
+ <div class="of-cs">${L?L.map(x=>`<div>${x}</div>`).join(''):'<div class="dim">The published data has nothing for this bot yet: no status or last action to show.</div>'}</div><button class="rn-btn" data-go="${d.tab}"${d.id==='squad'?' data-sec="rnSq"':''}>Open ${esc({overview:'Overview',rnd:'R&D',bot:'Bot',proof:'Proof',brain:'Brain'}[d.tab])} →</button>`;}
 function openCard(d,x,y){const c=$('#ofCard');pinned=d;c.innerHTML=cardHtml(d);c.hidden=false;const st=$('#ofStage').getBoundingClientRect(),w=c.offsetWidth,h=c.offsetHeight;
  if(st.width<600){c.style.left='8px';c.style.right='8px';c.style.top='auto';c.style.bottom='44px';}else{c.style.right='auto';c.style.bottom='auto';c.style.left=Math.max(8,Math.min(st.width-w-8,x+16))+'px';c.style.top=Math.max(8,Math.min(st.height-h-8,y-h/2))+'px';}}
 // ---------- 2D fallback ----------
@@ -81,7 +86,7 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
   const lb=document.createElement('div');lb.className='of-lb';lb.innerHTML=`<b>${d.role}</b>`;$('#ofLabels').appendChild(lb);labels.push([lb,d]);});
  // flows: arcs + packets (one InstancedMesh)
  const curves=FLOWS.map(([a,b])=>{const A=DESKS.find(d=>d.id===a),B=DESKS.find(d=>d.id===b),p0=new THREE.Vector3(A.pos[0],1.4,A.pos[1]),p2=new THREE.Vector3(B.pos[0],1.4,B.pos[1]),m=p0.clone().lerp(p2,.5);m.y=2.6+p0.distanceTo(p2)*.12;return new THREE.QuadraticBezierCurve3(p0,m,p2);});
- const lines=curves.map((c,i)=>{const on=G?.flows[FLOWS[i][0]];const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(40)),new THREE.LineDashedMaterial({color:on?0x39ff88:0xff3b5c,dashSize:on?.35:.12,gapSize:on?.12:.22,transparent:true,opacity:on?.75:.35}));l.computeLineDistances();S.add(l);return l;});
+ const lines=curves.map((c,i)=>{const on=FON(i);const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(40)),new THREE.LineDashedMaterial({color:on?0x39ff88:0xff3b5c,dashSize:on?.35:.12,gapSize:on?.12:.22,transparent:true,opacity:on?.75:.35}));l.computeLineDistances();S.add(l);return l;});
  const NP=mob?60:110,pk=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.07,0),new THREE.MeshBasicMaterial({color:0xffffff}),NP);pk.instanceMatrix.setUsage(THREE.DynamicDrawUsage);S.add(pk);
  const P=Array.from({length:NP},(_,i)=>({f:i%FLOWS.length,t:Math.random(),s:.12+Math.random()*.1}));const M=new THREE.Matrix4(),V=new THREE.Vector3(),Q=new THREE.Quaternion(),SC=new THREE.Vector3(),col=new THREE.Color();
  const pcol=[0x3ad7ff,0xc9a2ff,0xffb347,0xffd23f,0x39ff88,0x7f6cff,0x3ad7ff];
@@ -105,7 +110,7 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
  function frame(now){if(!vis()){running=false;return;}const still=RM.matches;
   if(last){const dt=Math.min(.05,(now-last)/1000);t+=dt;if(cam.auto)cam.az+=dt*.06;fps.n++;if(!fps.t0)fps.t0=now;if(now-fps.t0>1000){fps.v=Math.round(fps.n*1000/(now-fps.t0));fps.n=0;fps.t0=now;
     if(++fps.warm>2&&!still&&!forced){if(fps.v<30){if(++fps.low>=3){stop3d();mode2d('frame rate too low for 3D ('+fps.v+' fps)');return;}}else fps.low=0;}}
-   for(let i=0;i<NP;i++){const p=P[i],on=G?.flows[FLOWS[p.f][0]];if(still){p.t=(i*.137)%1;}else p.t+=dt*p.s*(on?1:.5);
+   for(let i=0;i<NP;i++){const p=P[i],on=FON(p.f);if(still){p.t=(i*.137)%1;}else p.t+=dt*p.s*(on?1:.5);
     if(p.t>1){p.t=0;}const lim=on?1:.42,tt=Math.min(p.t,lim);curves[p.f].getPoint(tt,V);const fade=on?1:Math.max(0,1-(p.t-lim)*3);SC.setScalar(p.t>lim?fade*.8:1);M.compose(V,Q,SC);pk.setMatrixAt(i,M);pk.setColorAt(i,col.setHex(on?pcol[p.f]:0xff3b5c));}
    pk.instanceMatrix.needsUpdate=true;if(pk.instanceColor)pk.instanceColor.needsUpdate=true;
    screens.forEach((s,i)=>{if(s.userData.spin)s.rotation.y+=dt*.8;else s.material.color&&(s.material.opacity=1);});
@@ -119,4 +124,10 @@ function build(THREE){const el=$('#ofStage'),mob=el.clientWidth<600,dpr=Math.min
  size();kick();}
 let kick=()=>{};
 function stop3d(){if(T){T.stop();T=null;}$('#ofStage').innerHTML='';$('#ofLabels').innerHTML='';}
-function refresh(){if(mode==='3d'&&T){T.lines.forEach((l,i)=>{const on=G?.flows[FLOWS[i][0]];l.material.color.setHex(on?0x39ff88:0xff3b5c);l.material.opacity=on?.75:.35;});}if(pinned&&!$('#ofCard').hidden)$('#ofCard').innerHTML=cardHtml(pinned);}
+function refresh(){if(mode==='3d'&&T){T.lines.forEach((l,i)=>{const on=FON(i);l.material.color.setHex(on?0x39ff88:0xff3b5c);l.material.opacity=on?.75:.35;});}if(pinned&&!$('#ofCard').hidden)$('#ofCard').innerHTML=cardHtml(pinned);}
+
+function sqCard(){const q=SQD&&Array.isArray(SQD.bots)?SQD:null;if(!q)return null;const st=q.stats||{},S0=q.start||1000,eq=b=>b.equity??b.cash;
+ const tot=q.bots.reduce((a,b)=>a+eq(b),0),n=Object.values(st).reduce((a,t)=>a+(t.n||0),0),op=q.bots.reduce((a,b)=>a+(b.open||[]).length,0),best=[...q.bots].sort((a,b)=>eq(b)-eq(a))[0];
+ return[`<b class="a">PAPER</b> · ${q.bots.length} bots · equity $${tot.toFixed(2)} of $${(S0*q.bots.length).toFixed(0)} · updated ${esc(q.updated_sast||'—')} SAST`,
+  q.bots.map(b=>`${esc(b.id)} $${eq(b).toFixed(0)}${(b.open||[]).length?' · '+b.open.length+' open':''}${(b.life||1)>1?' · life '+b.life:''}`).join(' &nbsp;·&nbsp; '),
+  `${op} open · ${n?n+' closed paper trades':'no trades yet'} · ${(q.deaths||[]).length} deaths${n&&best?` · leader ${esc(best.id)}`:''}`];}
