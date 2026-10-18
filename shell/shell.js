@@ -3,7 +3,7 @@
 (()=>{
 const Q=new URLSearchParams(location.search),$=s=>document.querySelector(s),h=(t,a={},c='')=>{const e=document.createElement(t);for(const k in a)e.setAttribute(k,a[k]);e.innerHTML=c;return e;};
 const SB=window.NL_SB||{},AU=SB.url+'/auth/v1',TK='nl_auth',SS=sessionStorage,LS=localStorage;
-const hash=new URLSearchParams(location.hash.slice(1));const cbErr=hash.get('error_description');
+const hash=new URLSearchParams((window.NL_AUTH_HASH||location.hash).slice(1));const cbErr=hash.get('error_description');
 let idOn=true;
 const authed=()=>{try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t)return false;if(t.mode!=='supabase')return false;return t.exp>Date.now()/1000;}catch{return false;}};
 let guideWait=false;const lock=on=>{document.body.classList.toggle('locked',on);if(!on&&guideWait){guideWait=false;setTimeout(()=>{const g=document.querySelector('#guide');g&&!g.open&&g.showModal();},600);}};

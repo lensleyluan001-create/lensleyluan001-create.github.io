@@ -1,5 +1,5 @@
 // NORTHLINE static API ($0 host). PAPER ONLY. Bot state/lab/calendar/indices: private Supabase tables (owner-only RLS), read with the logged-in session.
-window.NL_SB={url:'https://esymjstgmijmkksapsqw.supabase.co',key:'sb_publishable_vrR-ymzo6NgBuvPL0s-fbw_6SDBSFnd'};
+window.NL_AUTH_HASH=location.hash;window.NL_SB={url:'https://esymjstgmijmkksapsqw.supabase.co',key:'sb_publishable_vrR-ymzo6NgBuvPL0s-fbw_6SDBSFnd'};
 (()=>{const DATA='https://raw.githubusercontent.com/lensleyluan001-create/lensleyluan001-create.github.io/data/';const K='https://api.kraken.com/0/public/';
 const of=window.fetch.bind(window),C=new Map();
 const cached=(k,ttl,fn)=>{const h=C.get(k);if(h&&Date.now()-h.t<ttl)return h.p;const p=fn().catch(e=>{C.delete(k);throw e;});C.set(k,{t:Date.now(),p});return p;};
