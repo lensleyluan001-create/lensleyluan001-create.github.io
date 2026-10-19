@@ -22,9 +22,9 @@ function intro(done){
  lock(true);
  const pts=Array.from({length:40},(_,i)=>`${i*36},${200+Math.sin(i*.7)*60+Math.cos(i*1.9)*40-i*2}`).join(' ');
  const neur=Array.from({length:26},()=>`<i style="left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${(Math.random()*3).toFixed(2)}s"></i>`).join('');
- const el=h('div',{id:'nlIntro',role:'dialog','aria-label':'NORTHLINE intro'},`
- <div class="prog"></div><div class="bar"><span class="lg-brand">NORTHLINE <b>▲</b></span><button class="nlbtn" id="skip">Skip intro →</button></div>
- <section class="scene s-open"><div class="bgfx gridfx par"></div><div class="copy rv"><div class="kick">A paper trading lab</div><h1 class="grad">NORTHLINE</h1><p>Every market tells a story every second. We built a machine to listen.</p></div><div class="scrollhint">SCROLL ↓</div></section>
+ const el=h('div',{id:'nlIntro',role:'dialog','aria-label':'SUPER TRADING OS intro'},`
+ <div class="prog"></div><div class="bar"><span class="lg-brand">SUPER TRADING OS <b>▲</b></span><button class="nlbtn" id="skip">Skip intro →</button></div>
+ <section class="scene s-open"><div class="bgfx gridfx par"></div><div class="copy rv"><div class="kick">A paper trading lab</div><h1 class="grad">SUPER TRADING OS</h1><p>Every market tells a story every second. We built a machine to listen.</p></div><div class="scrollhint">SCROLL ↓</div></section>
  <section class="scene s-markets"><div class="bgfx"><svg viewBox="0 0 1400 400" preserveAspectRatio="none"><polyline points="${pts}" style="fill:none;stroke:#2fe39b;stroke-width:2;stroke-dasharray:2400;stroke-dashoffset:2400;animation:draw 6s ease forwards infinite alternate"/></svg></div><div class="copy rv"><div class="kick">01 · Markets</div><h2>Live crypto. Delayed indices, gold &amp; FX.</h2><p>Kraken data streams in for the coins the bot trades. Everything else sits beside it, marked delayed, for context only.</p><div class="chips"><span>BTC</span><span>ETH</span><span>SOL</span><span>+7 ALTS</span><span>US100</span><span>XAU</span></div></div></section>
  <section class="scene s-pulse"><div class="bgfx"><div class="pulse-ring"></div><div class="pulse-ring"></div><div class="pulse-ring"></div></div><div class="copy rv"><div class="kick">02 · The Pulse engine</div><div class="score">6/6</div><h2>Six checks. One score.</h2><p>The same engine file runs on this desk and in the paper bot. It only acts when the score clears its line and all six checks are green. Otherwise it waits.</p></div></section>
  <section class="scene s-brain"><div class="bgfx neur">${neur}</div><div class="copy rv"><div class="kick">03 · The Brain</div><h2>It watches. It scores itself.</h2><p>Every 30 minutes it records what the market did next. A setup only earns trust after 30 out-of-sample results. Today: <b>learning, not proven yet.</b></p></div></section>
@@ -45,7 +45,7 @@ async function refresh(){try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t?.r
 const PENDING='Invite pending: this email has no confirmed invite yet. Open the invite email from Supabase first, then come back and request a sign-in link.';
 function login(done){
  const el=h('div',{id:'nlLogin'},`<div class="lg-wrap">
- <div class="lg-pitch"><div class="lg-brand">NORTHLINE <b>▲</b> SUPER TRADING OS</div>
+ <div class="lg-pitch"><div class="lg-brand">SUPER TRADING OS <b>▲</b></div>
   <h1>One desk for every signal the bot sees, and <span class="grad">every lesson it learns.</span></h1>
   <p class="lead">A private trading lab: live crypto scoring, a strategy builder, a self-learning brain and a paper bot that has to prove itself before any real money is ever considered.</p>
   <div class="feat">
@@ -85,7 +85,7 @@ function savePrefs(){LS.setItem('nl_prefs',JSON.stringify(P));fetch('/api/prefs?
 function applyPrefs(){document.body.classList.toggle('compact',!!P.compact);}
 
 /* ---------- FEEDBACK (Supabase feedback table) ---------- */
-function feedback(){let d=$('#nlFb');if(!d){d=h('dialog',{id:'nlFb'},`<form method="dialog" id="fbF"><h2>Send feedback</h2><p class="dim small">Saved privately to the NORTHLINE feedback inbox.</p><textarea name="message" required placeholder="What should look or work better?"></textarea><p style="display:flex;gap:8px;justify-content:flex-end"><button class="nlbtn" value="cancel" formnovalidate>Cancel</button><button class="nlbtn pri" id="fbSend" value="send">Send</button></p><div class="dim small" id="fbMsg"></div></form>`);document.body.append(d);
+function feedback(){let d=$('#nlFb');if(!d){d=h('dialog',{id:'nlFb'},`<form method="dialog" id="fbF"><h2>Send feedback</h2><p class="dim small">Saved privately to the SUPER TRADING OS feedback inbox.</p><textarea name="message" required placeholder="What should look or work better?"></textarea><p style="display:flex;gap:8px;justify-content:flex-end"><button class="nlbtn" value="cancel" formnovalidate>Cancel</button><button class="nlbtn pri" id="fbSend" value="send">Send</button></p><div class="dim small" id="fbMsg"></div></form>`);document.body.append(d);
  d.querySelector('#fbSend').onclick=async e=>{e.preventDefault();const ta=d.querySelector('textarea');if(!ta.value.trim())return;
   const r=await fetch('/api/feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({message:ta.value,page:location.pathname})}).catch(()=>null);
   d.querySelector('#fbMsg').textContent=r&&r.ok?'Thanks, saved.':'Could not send right now.';if(r&&r.ok){ta.value='';setTimeout(()=>d.close(),900);}};}

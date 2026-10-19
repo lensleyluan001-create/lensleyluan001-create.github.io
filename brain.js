@@ -11,7 +11,7 @@ async function load(){try{ST=await (await fetch('/api/state',{cache:'no-store'})
  if(!B){$('#brStat').textContent='Brain not published yet';return;} render();}
 function shell(){return `<div class="br">
 <div class="br-hero panel"><canvas id="brNet" aria-label="Interactive brain network: hover or tap a neuron for its stats, drag to move, scroll to zoom"></canvas><div id="brTip" class="br-tip" hidden></div><div class="br-ctl"><span id="brHint" class="dim">hover · click to pin · drag · scroll to zoom</span><button id="brReset" type="button" title="Reset view">⟲ VIEW</button><button id="brFac" type="button" title="Switch network / factory view">FACTORY</button></div><div class="br-ov">
- <div class="br-t">NORTHLINE//<b>BRAIN</b> <span class="br-blink">●</span></div><div class="br-honest">LEARNING, NOT PROVEN YET.</div>
+ <div class="br-t">SUPER TRADING OS//<b>BRAIN</b> <span class="br-blink">●</span></div><div class="br-honest">LEARNING, NOT PROVEN YET.</div>
  <div id="brStat" class="dim small">booting cortex…</div></div></div>
 <div class="br-kpis" id="brK"></div>
 <div class="panel"><div class="ph"><b class="c">FORECASTER</b><span class="dim small" id="brFm">read-only projections · never places trades or sets size</span></div><div id="brF"></div></div>

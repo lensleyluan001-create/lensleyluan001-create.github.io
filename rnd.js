@@ -22,7 +22,7 @@ async function cloudLoad(){try{CLOUD.ideas=await sb('ideas?select=*&order=create
  const Q=J(LSQ,[]);if(Q.length){for(const q of Q)await sb('run_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({idea_ref:String(q.idea).slice(0,200),title:q.title,markets:q.markets,timeframe:q.timeframe})});SV(LSQ,[]);CLOUD.reqs=await sb('run_requests?select=*&order=id.desc&limit=20');}
 }catch(e){CLOUD.ok=false;CLOUD.why=String(e.message||e);}}
 function shell(){return`<div class="rn">
-<div class="panel rn-hero"><div class="rn-t">NORTHLINE//<b>R&amp;D FACILITY</b></div><div class="br-honest">PAPER RESEARCH · NOTHING HERE TRADES OR SETS SIZE.</div><div id="rnStat" class="dim small">loading lab…</div>
+<div class="panel rn-hero"><div class="rn-t">SUPER TRADING OS//<b>R&amp;D FACILITY</b></div><div class="br-honest">PAPER RESEARCH · NOTHING HERE TRADES OR SETS SIZE.</div><div id="rnStat" class="dim small">loading lab…</div>
  <nav class="rn-nav"><a href="#rn-ideas">Idea board</a><a href="#rn-bench">Test bench</a><a href="#rn-tools">Tool workshop</a><a href="#rn-grad">Graduation path</a></nav></div>
 <div class="panel" id="rn-grad"><div class="ph"><b class="c">GRADUATION PATH</b><span class="dim small">idea → lab → brain → bot → booked · every stage has a hard gate</span></div><div id="rnG" class="rn-grad"></div><div id="rnSq" class="rn-sq"></div><div id="rnX" class="rn-sq"></div></div>
 <div class="panel" id="rn-infl"><div class="dim small">loading influencer watch…</div></div><div class="panel" id="rn-ideas"><div class="ph"><b>IDEA BOARD</b><span class="dim small" id="rnSync"></span><span class="rn-flt" id="rnF"></span></div><div id="rnI" class="rn-cards"></div>
