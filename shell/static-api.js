@@ -17,11 +17,16 @@ async function kj(p){const r=await of(K+p);const d=await r.json();if(d.error&&d.
 const first=res=>res[Object.keys(res).find(k=>k!=='last')];
 const ohlc=async(p,i)=>first(await kj(`OHLC?pair=${p}&interval=${i}`)).map(x=>({time:x[0],open:+x[1],high:+x[2],low:+x[3],close:+x[4],vwap:+x[5],volume:+x[6],count:x[7]}));
 const depth=async(p,n)=>{const d=first(await kj(`Depth?pair=${p}&count=${n}`));const m=a=>a.map(x=>({price:+x[0],volume:+x[1],timestamp:+x[2]}));return{bids:m(d.bids),asks:m(d.asks)};};
+const FAST=['XBTUSD','ETHUSD','SOLUSD'],SLOW_MS=180000,SLOW=new Map();
 const pulseAll=()=>cached('pulse',25000,async()=>{const {m,cfg}=await eng();const pairs=Object.keys(cfg.pairs),d=cfg.data,t0=Date.now();
  const r=await kj('Ticker?pair='+pairs.join(','));const tk={};for(const[k,v]of Object.entries(r))tk[k]={last:+v.c[0],bid:+v.b[0],ask:+v.a[0],open:+v.o,high24:+v.h[1],low24:+v.l[1]};
- const out={};await Promise.all(pairs.map(async p=>{let [c15,c60,ob]=await Promise.all([ohlc(p,d.tf_fast),ohlc(p,d.tf_slow),depth(p,d.depth_levels)]);
+ // Price-feed tiers (2026-10-19, approved): the 3 scored coins are recomputed every tick (~30 s); the other pairs every 3 min.
+ // Each computation is unchanged: same candles/book/ticker fetched together and passed to the engine exactly as before.
+ const one=async p=>{let [c15,c60,ob]=await Promise.all([ohlc(p,d.tf_fast),ohlc(p,d.tf_slow),depth(p,d.depth_levels)]);
   if(d.drop_forming_bar){c15=c15.slice(0,-1);c60=c60.slice(0,-1);}const t=tk[cfg.pairs[p].ticker_key];const x=m.compute(p,c15,c60,ob.bids,ob.asks,t.last,t.bid,t.ask,cfg);delete x.atr15;
-  x.change24_pct=Number(((t.last/t.open-1)*100).toFixed(2));x.high24=t.high24;x.low24=t.low24;x.spark=c15.slice(-96).map(b=>b.close);out[p]=x;}));
+  x.change24_pct=Number(((t.last/t.open-1)*100).toFixed(2));x.high24=t.high24;x.low24=t.low24;x.spark=c15.slice(-96).map(b=>b.close);x.computed_at=Math.floor(Date.now()/1000);return x;};
+ const out={};await Promise.all(pairs.map(async p=>{if(FAST.includes(p)){out[p]=await one(p);return;}const h=SLOW.get(p);if(h&&Date.now()-h.t<SLOW_MS){out[p]=await h.p;return;}
+  const pr=one(p);SLOW.set(p,{t:Date.now(),p:pr});pr.catch(()=>SLOW.delete(p));out[p]=await pr;}));
  return {engine_version:cfg.engine_version,engine_hash:cfg.hash,verdict_rules:cfg.verdict,source:'kraken_public_rest (in-browser, same engine)',fetched_at:Math.floor(t0/1000),latency_ms:Date.now()-t0,pairs:out};});
 const state=()=>data('state.json').catch(()=>null);
 async function health(st){const {cfg}=await eng();const now=Math.floor(Date.now()/1000),h=st?.bot_health||{};const last=h.last_tick_ts||st?.generated_at||null;const age=last?now-last:null;

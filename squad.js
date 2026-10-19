@@ -4,7 +4,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 let C=null,at=0,inflight=null;
 // extra loop rows published beside 'squad' (lab symbols). fwd5m: status only (its bots are in 'squad'). fwdw: WINNER STYLES bots S13+ merged in.
 // A row that is missing or empty adds nothing (never fake bots).
-export const EXTRA=[{k:'squad_fwd5m',name:'5m loop',stale:15},{k:'squad_fwdw',name:'winners loop',stale:90}];
+export const EXTRA=[{k:'squad_fwd5m',name:'5m loop',stale:15},{k:'squad_fwdw',name:'winners loop',stale:90},{k:'squad_fwdcopy',name:'copy loop',stale:10}];
 export let FW=null,XR={};let MAIN0=null;   // one-shot /api/all (same fetch as the Overview) when the Bot tab opens first; no polling
 const rowBots=d=>Array.isArray(d?.bots)?d.bots.map(x=>x?.id).filter(Boolean):d?.bots&&typeof d.bots==='object'?Object.keys(d.bots):[];
 export function fwdInfo(id){for(const e of EXTRA){const d=XR[e.k];if(!d||!d.updated_sast||!rowBots(d).includes(id))continue;const age=(Date.now()-ts2ms(d.updated_sast))/60e3;return{alive:age<e.stale,last:String(d.updated_sast).slice(11,16),age:Math.round(age),name:e.name,row:e.k};}return null;}
@@ -28,7 +28,7 @@ export async function showBots(sel='#botSquad'){const el=document.querySelector(
   <div class="bs-bar"><i style="width:${Math.max(2,Math.min(100,v.eq/(S0*1.5)*100))}%;background:${v.eq<v.DL*1.2?'#ff3b5c':v.eq<S0?'#ffb347':'#39ff88'}"></i><em style="left:${v.DL/(S0*1.5)*100}%"></em></div>
   <div class="dim small">${(b.strats||[]).length} strategies · ${v.open.length} open · ${v.n?v.n+' closed':'no trades yet'} <span class="bs-more">tap for details</span></div></summary>
   <div class="bs-d"><div class="small">start ${$m(v.S0)} · death below ${$m(v.DL)} · born ${esc(b.born_sast||'—')} SAST${b.pinned?' · <b>pinned</b>: strategy fixed, no respawn swap':''}${b.note?' · '+esc(b.note):''}${v.recent?` · <b class="dn">died ${esc(v.recent.time_sast)} SAST at ${$m(v.recent.equity)}, respawned with new strategies</b>`:''}</div>
-  <div class="small">${v.open.length?'open: '+v.open.map(p=>p.entry==null&&p.limit!=null?`${esc(p.m)} limit ${esc(p.limit)} (not filled)`:`${esc(p.m)} @ ${esc(p.entry)} (SL ${esc(p.sl??'—')})`).join(', '):'no open positions'} · ${b.closed||0} closed this life</div>
+  <div class="small">${v.open.length?'open: '+v.open.map(p=>p.stake_usd!=null?`${esc(String(p.m).slice(0,10))} $${esc(p.stake_usd)} stake (leader ${esc(p.leader||'—')})`:p.entry==null&&p.limit!=null?`${esc(p.m)} limit ${esc(p.limit)} (not filled)`:`${esc(p.m)} @ ${esc(p.entry)} (SL ${esc(p.sl??'—')})`).join(', '):'no open positions'} · ${b.closed||0} closed this life</div>
   <ul>${v.strats.map(s=>`<li><b>${esc(s.x.family||'?')} ${esc(s.x.tf||'')}</b> <span class="${s.t&&s.t.n?'':'dim'}">${esc(s.txt)}</span><br><span class="dim">${esc(s.x.id)} · ${s.x.tested?`lab OOS n ${s.x.oos_n??'—'} · ΣR ${s.x.oos_total_R??'—'}`:'untested in lab'}</span></li>`).join('')}</ul></div></details>`).join('')}</div>`;}).join('');})()}</div>`;
  el.querySelector('[data-go]')?.addEventListener('click',e=>{e.preventDefault();window.go&&window.go('rnd');});}
 
@@ -40,9 +40,11 @@ export const GROUPS=[
  {k:'month',name:'MONTH-END',col:0xffd23f,desc:'Pinned turn-of-month (TOM) strategies on KF perps.'},
  {k:'day5',name:'DAY TRADING 5m',col:0x3ad7ff,desc:'Pinned 5m strategies on the fwd5m sub-loop. Plumbing test, backtest negative.'},
  {k:'winner',name:'WINNER STYLES',col:0xb48cff,desc:'How winners trade: families copied from documented profitable styles (S12+ once slots exist).'},
+ {k:'copy',name:'COPY TRADING',col:0x00e0b0,desc:'Paper copy of pump.fun wallets (S22): quotes only, no wallet, forward evidence only.'},
  {k:'other',name:'OTHER',col:0x9bb0b8,desc:'Bots that match no group rule yet.'}];
 export function groupOf(b){const S=b.strats||[],s=S[0]||{},fam=S.map(x=>String(x.family||'')).join(' '),id=S.map(x=>String(x.id||'')).join(' ');
  if(b.kind==='news-shock'||/news/.test(fam))return 'news';
+ if(/copy/i.test(String(b.group||''))||b.kind==='copy')return 'copy';
  if(/winner/i.test(String(b.group||''))||/winner/i.test(String(b.kind||''))||/(^|\s)(WIN|FWD-W-)/.test(id)||S.some(x=>/^w_/.test(String(x.family||''))||/WINNERS/.test(String(x.parent||''))))return 'winner';
  if(S.some(x=>x.tf==='5m')||/FWD-5M/.test(id))return 'day5';
  if(b.pinned&&/\btom\b/.test(fam))return 'month';
@@ -55,9 +57,9 @@ export function nextTOM(b,now=Date.now()){const s=(b.strats||[]).find(x=>x.famil
  const z=new Date(t+7200e3);return `${z.getUTCDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][z.getUTCMonth()]} ${String(z.getUTCHours()).padStart(2,'0')}:${String(z.getUTCMinutes()).padStart(2,'0')} SAST`;}
 export function botMeta(b,grp=groupOf(b)){const S=b.strats||[],mk=[...new Set(S.flatMap(x=>Array.isArray(x.markets)?x.markets:[]))],tfs=[...new Set(S.map(x=>x.tf).filter(Boolean))],ven=[...new Set(S.map(x=>x.venue_label||x.venue).filter(Boolean))],open=b.open||[];
  if(!mk.length)for(const p of open)if(p&&p.m&&!mk.includes(p.m))mk.push(p.m);
- const markets=mk.length?`${mk.slice(0,4).map(short).join(' ')}${mk.length>4?` +${mk.length-4}`:''}${ven.length?' · '+ven.join('/'):''}`:grp==='news'?'markets named by each confirmed alert':'building';
+ const markets=mk.length?`${mk.slice(0,4).map(short).join(' ')}${mk.length>4?` +${mk.length-4}`:''}${ven.length?' · '+ven.join('/'):''}`:grp==='news'?'markets named by each confirmed alert':grp==='copy'?'pump.fun tokens (Solana)':'building';
  const status=b.book_status&&b.book_status!=='open'&&b.book_status!=='filled'?(b.book_status==='pending'?`orders posted, waiting for fill (${open.length})`:String(b.book_status)):open.length?`in trade (${open.length})`:grp==='month'?'waiting for window':'waiting for setup';
- return{markets,nMk:mk.length,tf:tfs.length?tfs.join(' / '):grp==='news'?'per alert (4h exit)':'building',status,open,eq:b.equity??b.cash,win:grp==='month'?nextTOM(b):null,extra:((f)=>(grp==='day5'?'plumbing test, backtest negative · ':'')+(f?(f.alive?f.name+' alive':f.name+' STALE ('+f.age+' min)')+' · last cycle '+f.last+' SAST':grp==='day5'?'5m loop: building':''))(fwdInfo(b.id))};}
+ return{markets,nMk:mk.length,tf:tfs.length?tfs.join(' / '):grp==='news'?'per alert (4h exit)':grp==='copy'?'per leader trade (4h max hold)':'building',status,open,eq:b.equity??b.cash,win:grp==='month'?nextTOM(b):null,extra:((f)=>(grp==='day5'?'plumbing test, backtest negative · ':'')+(f?(f.alive?f.name+' alive':f.name+' STALE ('+f.age+' min)')+' · last cycle '+f.last+' SAST':grp==='day5'?'5m loop: building':''))(fwdInfo(b.id))};}
 export function mainMeta(s){if(s&&!s.challenge&&s.state)s=s.state;   // /api/all wraps the bot state in .state
  if(!s||!s.challenge)return null;const ch=s.challenge,v=s.last_bot_pulse?.verdicts||{},mk=Object.keys(v),op=ch.open_positions||[];
  return{markets:mk.length?`${mk.slice(0,4).map(short).join(' ')}${mk.length>4?` +${mk.length-4}`:''} · Kraken paper`:'building',tf:'30m checks',status:op.length?`in trade (${op.length})`:'waiting for setup',open:op,eq:ch.equity_usd,name:`v5 bot (${ch.version||'—'})`};}
