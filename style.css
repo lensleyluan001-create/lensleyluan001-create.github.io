@@ -249,3 +249,10 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 .bs-c.bs-ret{filter:grayscale(1);opacity:.55}
 .rn-loop{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0}.rn-lp{border:1px solid #c9a2ff66;border-radius:6px;padding:4px 8px;background:#0b0f14;font-size:12px}.rn-ar{color:#c9a2ff;font-size:12px}
 .rn-wk{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}.rn-wc{border:1px solid var(--ln);border-radius:6px;padding:6px 8px;background:#08130e}.rn-wo{opacity:.8;word-break:break-word;margin-top:2px}
+/* Charts upgrade: market picker */
+.seg.cx-pick{display:flex;flex-direction:column;align-items:stretch;gap:4px;flex:1 1 100%;background:none;border:0;padding:0}
+.cx-q{background:#08130e;border:1px solid var(--ln);color:var(--t);font:inherit;font-size:12px;padding:6px 8px;border-radius:4px;max-width:260px}
+.cx-g{display:flex;flex-wrap:wrap;align-items:center;gap:4px}.cx-g>span{min-width:150px}.cx-g button,.cx-mt{background:#08130e;border:1px solid var(--ln);color:var(--t);font:inherit;font-size:11px;padding:4px 8px;min-height:28px;border-radius:4px;cursor:pointer}
+.cx-g button.on{border-color:var(--g);color:var(--g)}.cx-g .hidden,.cx-g.hidden{display:none}.cx-mt{opacity:.5}.cx-mt.on{opacity:1;border-color:#ffd23f;color:#ffd23f}
+.cx-who{margin:6px 0;line-height:1.8}.cx-no{border:1px dashed #ffb347;color:#ffb347;padding:10px;margin:6px 0;border-radius:6px;font-size:12px}.cx-no.hidden{display:none}
+@media (max-width:640px){.cx-g>span{min-width:100%}.cx-q{max-width:none}}

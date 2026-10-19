@@ -118,27 +118,62 @@ function healthHtml(h){const a=tickAge(h),hb=HBx,al=ALx,m=x=>x==null?'—':Math.
 let LW,chart,cs,vs,l1,l2,hc,hs={},pls=[];
 function loadLW(){return LW??=new Promise((ok,no)=>{const s=document.createElement('script');s.src='/vendor/lightweight-charts.standalone.production.js';s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 const CH={layout:{background:{color:'transparent'},textColor:'#8fd6ae'},grid:{vertLines:{color:'#0e2418'},horzLines:{color:'#0e2418'}},rightPriceScale:{borderColor:'#143a26'},timeScale:{borderColor:'#143a26',timeVisible:true},autoSize:true};
-async function charts(fit){await loadLW();if(!chart){$('#chart').innerHTML='';chart=LightweightCharts.createChart($('#chart'),CH);cs=chart.addCandlestickSeries({upColor:'#39ff88',downColor:'#ff3b5c',borderVisible:false,wickUpColor:'#39ff88',wickDownColor:'#ff3b5c'});
+async function initCh(){await loadLW();if(!chart){$('#chart').innerHTML='';chart=LightweightCharts.createChart($('#chart'),CH);cs=chart.addCandlestickSeries({upColor:'#39ff88',downColor:'#ff3b5c',borderVisible:false,wickUpColor:'#39ff88',wickDownColor:'#ff3b5c'});
   vs=chart.addHistogramSeries({priceScaleId:'v',priceFormat:{type:'volume'}});chart.priceScale('v').applyOptions({scaleMargins:{top:.82,bottom:0}});l1=chart.addLineSeries({color:'#3ad7ff',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false});l2=chart.addLineSeries({color:'#c77dff',lineWidth:1.5,priceLineVisible:false,lastValueVisible:false});
-  hc=LightweightCharts.createChart($('#hist'),CH);const HC={XBTUSD:'#f7931a',ETHUSD:'#8c8cff',SOLUSD:'#14f195'};for(const p in HC)hs[p]=hc.addLineSeries({color:HC[p],lineWidth:2,title:NAME[p]});hs.XBTUSD.createPriceLine({price:70,color:'#39ff88',lineStyle:2,title:'TAKE'});}
- try{const j=await (await fetch(`/api/market?pair=${S.pair}&tf=${S.tf}`)).json();const T=x=>x+SAST;
+  hc=LightweightCharts.createChart($('#hist'),CH);const HC={XBTUSD:'#f7931a',ETHUSD:'#8c8cff',SOLUSD:'#14f195'};for(const p in HC)hs[p]=hc.addLineSeries({color:HC[p],lineWidth:2,title:NAME[p]});hs.XBTUSD.createPriceLine({price:70,color:'#39ff88',lineStyle:2,title:'TAKE'});}}
+let CGEN=0;async function charts(fit){cxUI();const gen=++CGEN;if(!isMain())return chartsX(fit,gen);S.pair=KR[S.cm];await initCh();$('#chNo')?.classList.add('hidden');
+ try{const j=await (await fetch(`/api/market?pair=${S.pair}&tf=${S.tf}`)).json();if(gen!==CGEN)return;const T=x=>x+SAST;
   cs.setData(j.candles.map(b=>({time:T(b.time),open:b.open,high:b.high,low:b.low,close:b.close})));vs.setData(j.candles.map(b=>({time:T(b.time),value:b.volume,color:b.close>=b.open?'rgba(57,255,136,.35)':'rgba(255,59,92,.35)'})));
   l1.setData(j.ema_fast.map(x=>({time:T(x.time),value:x.value})));l2.setData(j.ema_slow.map(x=>({time:T(x.time),value:x.value})));
   const t0=j.candles[0].time,tr=(S.d?.state?.recent_trades||[]).filter(t=>t.pair===S.pair&&t.ts>=t0);
-  cs.setMarkers(tr.map(t=>({time:T(Math.floor(t.ts/(S.tf*60))*S.tf*60),position:t.side==='BUY'?'belowBar':'aboveBar',color:t.side==='BUY'?'#39ff88':'#ff3b5c',shape:t.side==='BUY'?'arrowUp':'arrowDown',text:t.side})).sort((a,b)=>a.time-b.time));
+  cs.setMarkers(mkrs(S.tf,t0));void tr;
   pls.forEach(p=>cs.removePriceLine(p));pls=[];const u=S.d?.pulse?.pairs?.[S.pair];if(u&&u.direction!=='none')pls.push(cs.createPriceLine({price:u.stop,color:'#ff3b5c',lineStyle:2,title:'stop'}),cs.createPriceLine({price:u.t1,color:'#39ff88',lineStyle:2,title:'target'}));
   for(const p of S.d?.state?.challenge?.open_positions||[])if(p.pair===S.pair)pls.push(cs.createPriceLine({price:p.sl,color:'#ff7a90',title:'bot SL'}),cs.createPriceLine({price:p.tp,color:'#7dffb5',title:'bot TP'}));
   if(fit)chart.timeScale().fitContent();$('#chartInfo').textContent=`${S.tf===15?'15m':'1h'} candles · times SAST · last bar still forming`;depth(j.depth);
   const H=S.d?.state?.pulse_history||[];for(const p in hs){const m=new Map(H.map(h=>[Math.floor(Date.parse(h.time_sast.replace(' ','T')+':00+02:00')/1000)+SAST,h.scores[p]]).filter(x=>x[1]!=null));const u=S.d?.pulse?.pairs?.[p];if(u)m.set(S.d.pulse.fetched_at+SAST,u.score);hs[p].setData([...m].sort((a,b)=>a[0]-b[0]).map(([time,value])=>({time,value})));}
+ }catch(e){$('#chartInfo').textContent='chart feed error: '+e.message;}}
+// ---- Charts upgrade 2026-10-19: every market any bot trades, 5m/15m/1h/1d, bot markers, on-demand Kraken OHLC (cached, no polling) ----
+// Futures list = S23 scan list, prereg 2663f39d (slab/rnd/prereg_coins_kf30d_20261019.json, coins_kf). Charted from the Kraken SPOT pair of the same coin.
+const CX=[['main','Main bot',['BTC','ETH','SOL']],['squad','Squad coins',['ADA','AVAX','BTC','DOGE','DOT','ETH','LINK','LTC','SOL','XRP']],['fut','Futures (S23 KF perps)',['BTC','ETH','SOL','ZEC','XRP','NEAR','HYPE','DOGE','SUI','TAO']],['metal','Metals (S15/S16)',['GOLD','SILVER']]];
+const KR={BTC:'XBTUSD',ETH:'ETHUSD',SOL:'SOLUSD',ADA:'ADAUSD',AVAX:'AVAXUSD',DOGE:'XDGUSD',DOT:'DOTUSD',LINK:'LINKUSD',LTC:'LTCUSD',XRP:'XRPUSD',ZEC:'ZECUSD',NEAR:'NEARUSD',HYPE:'HYPEUSD',SUI:'SUIUSD',TAO:'TAOUSD'};   // GOLD/SILVER: Kraken spot has no XAU/XAG pair (checked 2026-10-19) -> no free chart source
+const CNAME={GOLD:'Gold (XAU)',SILVER:'Silver (XAG)'},TFN={5:'5m',15:'15m',60:'1h',1440:'1d'};
+const coinOf=m=>{let s=String(m||'').toUpperCase().replace(/^(PF_|PI_|Y:)/,'').replace(/[-_/ ]/g,'').replace(/(USDT|USDC|ZUSD|USD)$/,'');if(s==='XBT'||s==='XXBT')return'BTC';if(s==='XDG'||s==='XXDG')return'DOGE';if(s==='XAU'||s==='GOLD')return'GOLD';if(s==='XAG'||s==='SILVER')return'SILVER';return s;};
+S.cm=S.cm||'BTC';S.mkOff=S.mkOff||new Set();let SQM=null,SQB=null,cxBuilt=false;const OC=new Map();
+const isMain=()=>ORD.includes(KR[S.cm])&&(S.tf===15||S.tf===60);
+function sqLoad(){if(SQM)return;import('/squad.js').then(async m=>{SQM=m;const q=await m.loadSquad();SQB=q&&Array.isArray(q.bots)?q.bots:[];cxWho();if(S.tab==='charts')charts(false);}).catch(()=>{SQB=[];});}
+function cxUI(){sqLoad();if(cxBuilt)return;cxBuilt=true;const pt=$('#pairTabs');pt.classList.add('cx-pick');
+ pt.innerHTML=`<input id="cxQ" class="cx-q" type="search" placeholder="search market…" aria-label="Search markets">`+CX.map(([g,n,L])=>`<div class="cx-g" data-g="${g}"><span class="dim small">${n}</span>${L.map(c=>`<button data-c="${c}" class="${c===S.cm?'on':''}">${esc(CNAME[c]||c)}</button>`).join('')}</div>`).join('');
+ pt.onclick=e=>{const c=e.target.closest('button')?.dataset.c;if(!c)return;S.cm=c;pt.querySelectorAll('button[data-c]').forEach(b=>b.classList.toggle('on',b.dataset.c===c));cxWho();charts(true);};
+ $('#cxQ').oninput=e=>{const q=e.target.value.trim().toUpperCase();pt.querySelectorAll('.cx-g').forEach(g=>{let n=0;g.querySelectorAll('button').forEach(b=>{const ok=!q||b.dataset.c.includes(q)||b.textContent.toUpperCase().includes(q);b.classList.toggle('hidden',!ok);n+=ok;});g.classList.toggle('hidden',!n);});};
+ const tt=$('#tfTabs');tt.innerHTML=[5,15,60,1440].map(f=>`<button data-tf="${f}" class="${f===S.tf?'on':''}">${TFN[f]}</button>`).join('');
+ tt.onclick=e=>{const f=+e.target.dataset.tf;if(!f)return;S.tf=f;[...tt.children].forEach(b=>b.classList.toggle('on',+b.dataset.tf===f));charts(true);};
+ const ph=$('#chart').parentNode;const w=document.createElement('div');w.id='chWho';w.className='small cx-who';ph.insertBefore(w,$('#chart'));const no=document.createElement('div');no.id='chNo';no.className='cx-no hidden';ph.insertBefore(no,$('#chart'));
+ w.onclick=e=>{const g=e.target.closest('button')?.dataset.mg;if(!g)return;S.mkOff.has(g)?S.mkOff.delete(g):S.mkOff.add(g);cxWho();charts(false);};cxWho();}
+function botsOn(c){const o=[];if(['BTC','ETH','SOL'].includes(c))o.push(['main','v5 main bot']);for(const b of SQB||[]){const ms=new Set([...(b.strats||[]).flatMap(s=>Array.isArray(s.markets)?s.markets:[]),...(b.open||[]).map(p=>p.m)].map(coinOf));if(ms.has(c))o.push([SQM?SQM.groupOf(b):'other',b.id]);}return o;}
+function cxWho(){const w=$('#chWho');if(!w)return;const c=S.cm,on=botsOn(c),fut=CX[2][2].includes(c),G=new Map(SQM?SQM.GROUPS.map(g=>[g.k,g.name]):[]);G.set('main','MAIN BOT');
+ const grps=[...new Set(on.map(x=>x[0]))];
+ w.innerHTML=`<b>Who trades ${esc(CNAME[c]||c)}:</b> ${on.length?on.map(x=>esc(x[1])).join(', '):!SQB?'loading…':CX[3][2].includes(c)?'S15/S16 per the brief (the published fwdw row does not name their market, so none is confirmed from data)':'no bot in the published state'}${fut?' · on the S23 scan list (prereg 2663f39d, Kraken Futures perp; chart = Kraken spot)':''}${grps.length?` · <span class="dim">markers:</span> ${grps.map(g=>`<button class="cx-mt${S.mkOff.has(g)?'':' on'}" data-mg="${esc(g)}">${esc(G.get(g)||g)}</button>`).join(' ')}`:''}`;}
+function mkrs(tf,t0){const c=S.cm,o=[],step=tf*60,B=t=>Math.floor(t/step)*step+SAST;
+ if(!S.mkOff.has('main'))for(const t of S.d?.state?.recent_trades||[])if(coinOf(t.pair)===c&&t.ts>=t0)o.push({time:B(t.ts),position:t.side==='BUY'?'belowBar':'aboveBar',color:t.side==='BUY'?'#39ff88':'#ff3b5c',shape:t.side==='BUY'?'arrowUp':'arrowDown',text:'v5 '+t.side});
+ for(const b of SQB||[]){const g=SQM?SQM.groupOf(b):'other';if(S.mkOff.has(g))continue;for(const p of b.open||[]){if(coinOf(p.m)!==c)continue;const ts=p.opened_sast?Date.parse(String(p.opened_sast).replace(' ','T').slice(0,16)+':00+02:00')/1000:null;if(!ts||ts<t0)continue;const sh=p.side===-1||/short|sell/i.test(String(p.side||''));o.push({time:B(ts),position:sh?'aboveBar':'belowBar',color:'#ffd23f',shape:sh?'arrowDown':'arrowUp',text:b.id+' entry'});}}
+ return o.sort((a,b)=>a.time-b.time);}
+async function ohlc(kp,tf){const k=kp+'|'+tf,c=OC.get(k),ttl={5:60e3,15:120e3,60:300e3,1440:900e3}[tf];if(c&&Date.now()-c.t<ttl)return c.v;
+ const j=await (await fetch(`https://api.kraken.com/0/public/OHLC?pair=${kp}&interval=${tf}`)).json();if(j.error&&j.error.length)throw new Error(String(j.error[0]));const key=Object.keys(j.result||{}).find(x=>x!=='last');if(!key)throw new Error('no data');
+ const v=j.result[key].map(b=>({time:+b[0],open:+b[1],high:+b[2],low:+b[3],close:+b[4],volume:+b[6]}));OC.set(k,{t:Date.now(),v});return v;}
+const emaX=(a,n)=>{const k=2/(n+1);let e=null;return a.map(b=>(e=e==null?b.close:b.close*k+e*(1-k),{time:b.time+SAST,value:e})).slice(n-1);};
+async function chartsX(fit,gen){await initCh();if(gen!==CGEN)return;const c=S.cm,kp=KR[c],no=$('#chNo');pls.forEach(p=>cs.removePriceLine(p));pls=[];
+ const ob=()=>{$('#depthInfo').textContent='order book: shown for the 3 engine coins (BTC/ETH/SOL) on 15m/1h';$('#ob').innerHTML='';const cv=$('#depth');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);};
+ if(!kp){cs.setData([]);vs.setData([]);l1.setData([]);l2.setData([]);cs.setMarkers([]);no.innerHTML=`<b>No free chart source</b> for ${esc(CNAME[c]||c)}: Kraken has no ${c==='GOLD'?'XAU':'XAG'}/USD spot pair, and the bots' metal prices come from a source we can't chart for free. Nothing is drawn rather than faked.`;no.classList.remove('hidden');$('#chartInfo').textContent='no free chart source';ob();return;}
+ no.classList.add('hidden');$('#chartInfo').textContent='loading…';
+ try{const v=await ohlc(kp,S.tf);if(gen!==CGEN||S.cm!==c)return;const T=x=>x+SAST;cs.setData(v.map(b=>({time:T(b.time),open:b.open,high:b.high,low:b.low,close:b.close})));vs.setData(v.map(b=>({time:T(b.time),value:b.volume,color:b.close>=b.open?'rgba(57,255,136,.35)':'rgba(255,59,92,.35)'})));
+  l1.setData(emaX(v,20));l2.setData(emaX(v,50));cs.setMarkers(v.length?mkrs(S.tf,v[0].time):[]);if(fit)chart.timeScale().fitContent();
+  $('#chartInfo').textContent=`${esc(c)} · ${TFN[S.tf]} candles · Kraken spot ${kp} · times SAST · fetched on demand, cached ${({5:1,15:2,60:5,1440:15})[S.tf]} min`;ob();
  }catch(e){$('#chartInfo').textContent='chart feed error: '+e.message;}}
 function depth(d){const c=$('#depth'),x=c.getContext('2d'),W=c.width=c.clientWidth*devicePixelRatio,H=c.height=c.clientHeight*devicePixelRatio;let cb=0,ca=0;const B=d.bids.map(b=>({p:b.price,c:cb+=b.volume})),A=d.asks.map(a=>({p:a.price,c:ca+=a.volume}));
  const lo=B.at(-1).p,hi=A.at(-1).p,mx=Math.max(cb,ca),X=p=>(p-lo)/(hi-lo)*W,Y=v=>H-v/mx*H*.92;const area=(a,col,f)=>{x.beginPath();x.moveTo(X(a[0].p),H);a.forEach(o=>x.lineTo(X(o.p),Y(o.c)));x.lineTo(X(a.at(-1).p),H);x.fillStyle=f;x.fill();x.strokeStyle=col;x.lineWidth=2;x.stroke();};
  area(B,'#39ff88','rgba(57,255,136,.18)');area(A,'#ff3b5c','rgba(255,59,92,.18)');const bb=d.bids[0].price,ba=d.asks[0].price,dd=dp(bb);
  $('#depthInfo').textContent=`spread ${fmt(ba-bb,dd)} (${((ba-bb)/((ba+bb)/2)*1e4).toFixed(2)} bp) · green = buyers waiting, red = sellers waiting`;
  $('#ob').innerHTML=d.bids.slice(0,6).map((b,i)=>`<div><span class="up">${fmt(b.price,dd)}</span><span>${fmt(b.volume,4)}</span></div><div><span class="dn">${fmt(d.asks[i].price,dd)}</span><span>${fmt(d.asks[i].volume,4)}</span></div>`).join('');}
-['pairTabs'].forEach(()=>{$('#pairTabs').innerHTML=ORD.map(p=>`<button data-p="${p}" class="${p===S.pair?'on':''}">${NAME[p]}</button>`).join('');});
-$('#pairTabs').onclick=e=>{const p=e.target.dataset.p;if(!p)return;S.pair=p;[...$('#pairTabs').children].forEach(b=>b.classList.toggle('on',b.dataset.p===p));charts(true);};
-$('#tfTabs').onclick=e=>{const t=+e.target.dataset.tf;if(!t)return;S.tf=t;[...$('#tfTabs').children].forEach(b=>b.classList.toggle('on',+b.dataset.tf===t));charts(true);};
 // ---------- markets
 function renderIdx(j){if(!j||!once('idx',j.fetched_at))return;$('#idx').innerHTML=j.quotes.map(q=>q.status!=='DELAYED'?`<div class="ix"><div class="n">${esc(q.name)}</div><div class="dim">unavailable</div></div>`:
  `<div class="ix"><div class="row"><span class="n">${esc(q.name)}</span><span class="delayed">DELAYED</span></div><div class="p">${fmt(q.price)}</div><div class="${q.change_pct>=0?'up':'dn'} small">${q.change_pct>=0?'+':''}${fmt(q.change_pct)}% vs previous close</div>${spark(q.spark)}<div class="dim small">as of ${sast(q.market_time)} SAST</div></div>`).join('');}
@@ -175,7 +210,7 @@ window.S=S;window.go=go;const start=location.pathname.replace(/\//g,'')||'overvi
 // shared in-app links: <a data-go=tab data-sec=id> (Office card and squad have their own handlers)
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[data-go]');if(!a||a.closest('#ofCard,#botSquad'))return;e.preventDefault();go(a.dataset.go);const sec=a.dataset.sec;if(sec){let k=0;const iv=setInterval(()=>{const el=document.getElementById(sec);if(el&&el.offsetHeight){if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({block:'start',behavior:'smooth'});el.focus?.({preventScroll:true});clearInterval(iv);}else if(++k>40)clearInterval(iv);},100);}});
 if(!localStorage.getItem('nl_seen')&&!Q.has('noguide')&&!DEMO)setTimeout(()=>$('#guide').showModal(),1200);
-clock();setInterval(clock,1000);tick();setInterval(tick,30000);setInterval(()=>{if(S.tab==='charts'&&!document.hidden)charts(false);},20000);
+clock();setInterval(clock,1000);tick();setInterval(tick,30000);setInterval(()=>{if(S.tab==='charts'&&!document.hidden&&isMain())charts(false);},20000);
 if(Q.get('events')){let i=0;const ev=[['XBTUSD','🟢','DEMO: bot opened paper BTC'],['XBTUSD','🏆','DEMO: take-profit on BTC'],['ETHUSD','🟥','DEMO: stop-loss on ETH'],['SOLUSD','💨','DEMO: bot closed SOL (trend_flip)']];setInterval(()=>{if(S.d){const e=ev[i++%ev.length];event(...e);}},2500);}
 // currency toggle (USD / ZAR via Frankfurter ECB daily rate)
 fetch('/api/lab?key=summary').then(r=>r.ok?r.json():null).then(j=>{if(j?.usdzar?.rates?.ZAR){ZAR=j.usdzar.rates.ZAR;window.ZAR_DATE=j.usdzar.date;}curBtn();});
