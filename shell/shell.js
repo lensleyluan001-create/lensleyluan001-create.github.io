@@ -81,7 +81,7 @@ const devKey=()=>{let k=LS.getItem('nl_dev');if(!k){k='d'+crypto.getRandomValues
 let P={compact:false};
 const pkey=()=>{try{const t=JSON.parse(LS.getItem(TK)||'null');return t?.sub?'u'+t.sub.replace(/[^a-z0-9]/gi,''):devKey();}catch{return devKey();}};
 async function loadPrefs(){try{const c=LS.getItem('nl_prefs');if(c)P={...P,...JSON.parse(c)};applyPrefs();const r=await fetch('/api/prefs?k='+pkey());if(r.ok){const j=await r.json();if(j&&j.prefs){P={...P,...j.prefs};LS.setItem('nl_prefs',JSON.stringify(P));applyPrefs();}}}catch{}}
-function savePrefs(){LS.setItem('nl_prefs',JSON.stringify(P));fetch('/api/prefs?k='+pkey(),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(P)}).catch(()=>{});}
+function savePrefs(){try{const o=JSON.parse(LS.getItem('nl_prefs')||'{}');if(o&&o.last_seen_updates&&!(P.last_seen_updates>=o.last_seen_updates))P.last_seen_updates=o.last_seen_updates;}catch{}LS.setItem('nl_prefs',JSON.stringify(P));fetch('/api/prefs?k='+pkey(),{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(P)}).catch(()=>{});}
 function applyPrefs(){document.body.classList.toggle('compact',!!P.compact);}
 
 /* ---------- FEEDBACK (Supabase feedback table) ---------- */
