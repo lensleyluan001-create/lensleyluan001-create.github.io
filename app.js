@@ -7,7 +7,7 @@
   const p=F(input,o).then(async r=>({b:await r.text(),s:r.status}));C.set(u,{t:Date.now(),p});p.then(r=>{if(r.s>=500)C.delete(u);},()=>C.delete(u));
   return p.then(r=>new Response(r.b,{status:r.s,headers:{'content-type':'application/json'}}));};
  window.NL_DATA={stats:()=>({cached:C.size,urls:[...C.keys()]}),clear:()=>C.clear()};})();
-const $=s=>document.querySelector(s),SAST=7200,ORD=['XBTUSD','ETHUSD','SOLUSD'],NAME={XBTUSD:'BTC',ETHUSD:'ETH',SOLUSD:'SOL'};
+const $=s=>document.querySelector(s),SAST=7200,ORD=['XBTUSD','ETHUSD','SOLUSD'],NAME=new Proxy({XBTUSD:'BTC',ETHUSD:'ETH',SOLUSD:'SOL',XDGUSD:'DOGE'},{get:(o,k)=>typeof k!=='string'?o[k]:o[k]??k.replace(/^X(?=[A-Z]{3}USD$)/,'').replace(/USD$/,'')});   // any pair the bot trades gets a readable name
 const Q=new URLSearchParams(location.search),DEMO=Q.get('demo');
 const S={d:null,tab:'overview',pair:'XBTUSD',tf:15,eng:'XBTUSD',lastOk:0,keys:{},prevScore:{},prevVerdict:{},tradeKeys:null,sound:false,notify:false,idxAt:0};
 window.ZAR=null;window.CUR=localStorage.getItem('nl_cur')||'USD';
