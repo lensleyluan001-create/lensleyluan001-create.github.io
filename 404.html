@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/wAWlag1cqSa0rImci4QVwyvIRNmKeKb8VXxLld8v7g=' https://unpkg.com/lightweight-charts@4.2.0/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://esymjstgmijmkksapsqw.supabase.co wss://esymjstgmijmkksapsqw.supabase.co https://api.kraken.com; worker-src 'self' blob:; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/wAWlag1cqSa0rImci4QVwyvIRNmKeKb8VXxLld8v7g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://esymjstgmijmkksapsqw.supabase.co wss://esymjstgmijmkksapsqw.supabase.co https://api.kraken.com; worker-src 'self' blob:; media-src 'self' data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SUPER TRADING OS ▲ paper</title><meta name="theme-color" content="#030605"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="description" content="SUPER TRADING OS Pulse: live Kraken crypto engine shared 1:1 with the paper bot. PAPER ONLY.">
 <script type="importmap">{"imports":{"node:crypto":"/shell/crypto-shim.js"}}</script><script src="/shell/static-api.js"></script><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/shell/theme.css"></head><body>
@@ -7,9 +7,9 @@
 <header class="top">
  <div class="logo">SUPER TRADING OS <b>▲</b></div>
  <div class="hdr"><span id="badge" class="badge off">● CONNECTING</span><span id="age" class="dim">—</span><span class="paper-tag">PAPER · NO LIVE MONEY</span><span id="clock" class="dim">--:--:-- SAST</span>
- <button id="cur" class="ibtn wide">USD</button><button id="help" class="ibtn" aria-label="Guide">?</button></div>
+ <button id="cur" class="ibtn wide" aria-label="Display currency">USD</button><button id="help" class="ibtn" aria-label="Guide">?</button></div>
 </header>
-<nav class="tabsbar" id="tabs"><a data-t="overview">Overview</a><a data-t="engine">Engine</a><a data-t="charts">Charts</a><a data-t="markets">Markets &amp; Lab</a><a data-t="bot">Bot</a><a data-t="proof">Proof</a><a data-t="trade">Trade Desk</a><a data-t="builder">Builder</a><a data-t="brain">🧠 Brain</a><a data-t="rnd">🧪 R&amp;D</a><a data-t="office">🏢 Office</a></nav>
+<nav class="tabsbar" id="tabs" aria-label="Main sections"><a data-t="overview" href="/">Overview</a><a data-t="engine" href="/engine">Engine</a><a data-t="charts" href="/charts">Charts</a><a data-t="markets" href="/markets">Markets</a><a data-t="bot" href="/bot">Bot</a><a data-t="proof" href="/proof">Proof</a><a data-t="brain" href="/brain">🧠 Brain</a><a data-t="rnd" href="/rnd">🧪 R&amp;D</a><a data-t="office" href="/office">🏢 Office</a></nav>
 <section id="strip" class="strip"><div class="sk">Loading live market…</div></section>
 <main>
  <section id="t-overview" class="tab"><div id="cards" class="cards"></div>
@@ -24,9 +24,7 @@
   <div class="panel"><div class="ph"><b>ORDER BOOK</b><span class="dim small" id="depthInfo"></span></div><canvas id="depth" class="depth"></canvas><div class="ob" id="ob"></div></div>
   <div class="panel"><div class="ph"><b>PULSE HISTORY</b><span class="dim small">score over time · 70 = engine TAKE line</span></div><div id="hist" class="hist"></div></div></section>
  <section id="t-proof" class="tab hidden"><div id="proof"><div class="sk">Loading proof…</div></div></section>
- <section id="t-trade" class="tab hidden"><div id="trade"><div class="sk">Loading trade desk…</div></div></section>
  <section id="t-bot" class="tab hidden"><div id="bot"></div><div id="botSquad"></div></section>
- <section id="t-builder" class="tab hidden"><div id="builder"></div></section>
  <section id="t-brain" class="tab hidden"><div id="brain"></div></section>
  <section id="t-rnd" class="tab hidden"><div id="rnd"></div></section>
  <section id="t-office" class="tab hidden"><div id="office"></div></section>
@@ -40,7 +38,8 @@
 <li><b>Pulse score (0–100):</b> how strongly the market lines up for a buy. Under 55 means wait, 55–69 means watch, and 70+ with all six checks green means <b>TAKE</b>.</li>
 <li><b>Six checks:</b> tap any chip to see what it means in plain words. The bot only buys when all six are green.</li>
 <li><b>Engine tab:</b> the same score as a living engine. Blue idle means waiting, amber revving means getting close, green redline means TAKE. Pistons misfire for the checks that fail.</li>
-<li><b>Bot tab:</b> the paper account (start capital set in the bot config, now $1,000), its trades and every version that has "died" and rebuilt.</li>
+<li><b>Bot tab:</b> the paper account (start capital set in the bot config, now $1,000), the paper squad, health &amp; heartbeat and every version that has "died" and rebuilt. Every fill is in <b>Proof</b>.</li>
+<li><b>Keys:</b> 1 Overview · 2 Engine · 3 Charts · 4 Markets · 5 Bot · 6 Proof · 7 Brain · 8 R&amp;D · 9 Office · <kbd>/</kbd> or <kbd>Ctrl K</kbd> command palette.</li>
 <li>Everything is <b>paper money</b>. Nothing here can place a real trade.</li></ol><button id="gclose" class="ibtn wide">Got it</button></dialog>
 <div id="tip" class="tip hidden"></div>
 <script src="/app.js" defer></script><script src="/shell/shell.js" defer></script></body></html>

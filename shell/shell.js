@@ -12,7 +12,7 @@ let guideWait=false;const lock=on=>{document.body.classList.toggle('locked',on);
 /* ---------- sticky offsets + nav hints ---------- */
 function layout(){const t=$('.top'),n=$('#tabs');if(t&&n)n.style.top=t.offsetHeight+'px';}
 addEventListener('resize',layout);
-const TABS=[['overview','Overview','1'],['engine','Engine','2'],['charts','Charts','3'],['markets','Markets & Lab','4'],['bot','Bot','5'],['proof','Proof','6'],['trade','Trade Desk','7'],['builder','Builder','8'],['brain','Brain','9'],['rnd','R&D','0'],['office','Office','o']];
+const TABS=[['overview','Overview','1'],['engine','Engine','2'],['charts','Charts','3'],['markets','Markets','4'],['bot','Bot','5'],['proof','Proof','6'],['brain','Brain','7'],['rnd','R&D','8'],['office','Office','9']];
 function hints(){document.querySelectorAll('#tabs a').forEach(a=>{const t=TABS.find(x=>x[0]===a.dataset.t);if(t&&!a.querySelector('.kb'))a.append(h('span',{class:'kb'},t[2]));});
  const hd=$('.hdr');if(hd&&!$('#palOpen')){const b=h('button',{id:'palOpen',class:'ibtn wide palbtn',title:'Command palette'},'⌘K');b.onclick=pal;hd.prepend(b);}}
 
@@ -47,11 +47,11 @@ function login(done){
  const el=h('div',{id:'nlLogin'},`<div class="lg-wrap">
  <div class="lg-pitch"><div class="lg-brand">SUPER TRADING OS <b>▲</b></div>
   <h1>One desk for every signal the bot sees, and <span class="grad">every lesson it learns.</span></h1>
-  <p class="lead">A private trading lab: live crypto scoring, a strategy builder, a self-learning brain and a paper bot that has to prove itself before any real money is ever considered.</p>
+  <p class="lead">A private trading lab: live crypto scoring, an R&amp;D lab, a self-learning brain and a paper bot that has to prove itself before any real money is ever considered.</p>
   <div class="feat">
    <div><i>MARKETS</i><b>Markets &amp; Lab</b><span>Live Kraken coins plus delayed indices, gold and FX for context.</span></div>
    <div><i>ENGINE</i><b>Pulse engine</b><span>Six checks, one 0–100 score. Same file as the bot, verified by hash.</span></div>
-   <div><i>BUILDER</i><b>Strategy builder</b><span>Combine indicators and see honest backtests with costs and sample sizes.</span></div>
+   <div><i>R&amp;D</i><b>Research lab</b><span>Ideas, honest backtests with costs and sample sizes, and the paper squad.</span></div>
    <div><i>BRAIN</i><b>Self-learning brain</b><span>Scores ~1,360 indicator combos on what happened next. Trust only after 30 results.</span></div>
    <div><i>PROOF</i><b>Proof</b><span>Every paper trade, version, death and respawn, on the record.</span></div>
    <div><i>DESK</i><b>Trade desk</b><span>Charts, order book, stops and targets, all in one place.</span></div>

@@ -2,47 +2,25 @@
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=(v,d=2)=>v==null||!isFinite(v)?'—':Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const M=(v,d)=>window.M(v,d),dp=p=>p>=1000?1:p>=10?2:p>=1?4:5,sast=ts=>ts?new Date((ts+7200)*1000).toISOString().slice(0,16).replace('T',' '):'—';
-const L={};let labSum=null,labSel=null,lw;
-function loadLW(){return lw??=new Promise((ok,no)=>{if(window.LightweightCharts)return ok();const s=document.createElement('script');s.src='https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js';s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
+const L={};let labSum=null;
 const pct=v=>v==null?'—':(v>=0?'+':'')+fmt(v)+'%';
-export async function show(t){if(t==='markets')await markets();if(t==='proof')proof(true);if(t==='trade')trade();if(t==='engine')learn(true);if(t==='builder')builder();}
+export async function show(t){if(t==='markets')await markets();if(t==='proof')proof(true);if(t==='engine')learn(true);}
 export function update(t,force){if(t==='proof')proof(force);if(t==='engine')learn(force);if(t==='markets'&&force)markets(true);}
 // ---------------- MARKETS & LAB
-async function markets(force){if(!labSum||force){try{labSum=await (await fetch('/api/lab?key=summary')).json();}catch(e){$('#lab').innerHTML='<div class="panel">Lab results unavailable.</div>';return;}}
- const s=labSum;if(s.error){$('#lab').innerHTML=`<div class="panel">Strategy lab: ${esc(s.error)}</div>`;return;}
- const row=x=>x.error?`<tr><td>${esc(x.name)}</td><td colspan=8 class="dim">data error</td></tr>`:`<tr class="lr" data-s="${x.symbol}"><td><b>${esc(x.name)}</b></td><td>${fmt(x.last,dp(x.last))}</td><td class="${x.chg_24h_pct>=0?'up':'dn'}">${pct(x.chg_24h_pct)}</td>
-  <td><span class="vbadge ${x.verdict==='EDGE'?'vb-TAKE':'vb-STAND_ASIDE'}">${x.verdict==='EDGE'?'EDGE '+x.grade:'NO EDGE'}</span></td><td>${esc(x.family)}</td><td>${x.oos.trades}</td><td>${x.oos.win_rate==null?'—':fmt(x.oos.win_rate*100,0)+'%'}</td><td>${x.oos.profit_factor??'—'}</td><td class="${x.oos.net_pct>=0?'up':'dn'}">${pct(x.oos.net_pct)}</td></tr>`;
- const tbl=k=>`<div class="tw"><table><tr><th>SYMBOL</th><th>LAST</th><th>24H</th><th>LAB VERDICT</th><th>BEST FAMILY (OOS)</th><th>OOS TRADES</th><th>WIN</th><th>PF</th><th>OOS NET</th></tr>${s.symbols.filter(x=>x.kind===k).map(row).join('')}</table></div>`;
- const edges=s.symbols.filter(x=>x.verdict==='EDGE').length;
- $('#lab').innerHTML=`<div class="panel"><div class="ph"><b>STRATEGY LAB</b><span class="dim small">computed ${sast(s.generated_at)} SAST · recomputed every 4h by the bot box</span></div>
- <p class="headline">${edges?`${edges} symbol(s) show an out-of-sample edge after costs.`:'Right now <b>no symbol shows a real edge</b> after fees and spreads with at least 30 out-of-sample trades. That is the honest answer; the lab will keep re-testing.'} Tap any row to open its lab.</p>
- <details class="adv"><summary>How the lab decides (plain English)</summary><p class="small">${esc(s.method)}. Six strategy families are tested (EMA trend, RSI mean reversion, Bollinger breakout, Donchian breakout, MACD, VWAP reversion) with standard settings. Settings are chosen on the older 70% of bars and then judged only on the newest 30% the lab never saw. Crypto: Kraken live data, long-only (the bot can't short spot), Kraken taker fees. Forex/gold: Yahoo chart feed, <b>unofficial and delayed</b>, typical retail spreads. "NO EDGE" = lost money, profit factor ≤ 1, or fewer than 30 test trades.</p></details>
- <h4 class="dim">CRYPTO · Kraken (live)</h4>${tbl('crypto')}<h4 class="dim">FOREX &amp; GOLD · Yahoo (unofficial, delayed)</h4>${tbl('fx')}</div><div id="labd"></div>`;
- $('#lab').onclick=e=>{const r=e.target.closest('.lr');if(r)labDetail(r.dataset.s);};if(labSel)labDetail(labSel);}
-async function labDetail(sym){labSel=sym;const box=$('#labd');box.innerHTML='<div class="panel sk">Loading lab…</div>';const d=await (await fetch('/api/lab?key='+sym)).json();if(d.error){box.innerHTML=`<div class="panel">${esc(d.error)}</div>`;return;}
- const b=d.best_candidate,o=b.out_of_sample,edge=d.verdict==='EDGE';
- const say=edge?`Best out-of-sample: <b>${esc(b.family)}</b> (${b.params.join(', ')}), grade <b>${b.grade}</b>. ${o.trades} unseen trades, ${fmt(o.win_rate*100,0)}% wins, profit factor ${o.profit_factor}, worst drawdown ${o.max_dd_pct}%.`
-  :`<b>No edge found.</b> The closest was ${esc(b.family)} (${b.params.join(', ')}): ${o.trades} unseen trade(s), net ${pct(o.net_pct)}${o.trades<30?', too few trades to trust':''}. Don't trade this on these rules.`;
- box.innerHTML=`<div class="panel"><div class="ph"><b>${esc(d.name)} · LAB</b><span class="dim small">${esc(d.data)} · ${d.bars} × 1h bars · cost ${d.cost_round_trip_pct}% per round trip${d.long_only?' · long-only':''}</span></div>
- <p class="headline">${say}</p><div id="labchart" class="chart" style="height:340px"></div><div class="legend" id="lableg"></div>
- <div class="tw"><table><tr><th>FAMILY</th><th>SETTINGS (picked in-sample)</th><th>IS NET</th><th>IS TRADES</th><th>OOS NET</th><th>OOS TRADES</th><th>OOS WIN</th><th>OOS PF</th><th>OOS MAX DD</th><th>GRADE</th></tr>
- ${d.families.map(f=>`<tr><td>${esc(f.family)}</td><td>${f.params.join(', ')}</td><td>${pct(f.in_sample.net_pct)}</td><td>${f.in_sample.trades}</td><td class="${f.out_of_sample.net_pct>=0?'up':'dn'}">${pct(f.out_of_sample.net_pct)}</td><td>${f.out_of_sample.trades}</td><td>${f.out_of_sample.win_rate==null?'—':fmt(f.out_of_sample.win_rate*100,0)+'%'}</td><td>${f.out_of_sample.profit_factor??'—'}</td><td>${f.out_of_sample.max_dd_pct}%</td><td>${f.grade}</td></tr>`).join('')}</table></div>
- <p class="dim small">In-sample results are shown only for transparency. Decisions use out-of-sample columns only. Past results don't guarantee anything.</p></div>`;
- await loadLW();const c=LightweightCharts.createChart($('#labchart'),{layout:{background:{color:'transparent'},textColor:'#8fd6ae'},grid:{vertLines:{color:'#0e2418'},horzLines:{color:'#0e2418'}},timeScale:{timeVisible:true},autoSize:true});
- const cs=c.addCandlestickSeries({upColor:'#39ff88',downColor:'#ff3b5c',borderVisible:false,wickUpColor:'#39ff88',wickDownColor:'#ff3b5c'});const T=t=>t+7200;
- cs.setData(d.candles.map(x=>({time:T(x.t),open:x.o,high:x.h,low:x.l,close:x.c})));const cols=['#3ad7ff','#c77dff','#ffd23f','#ff8a3a'];let i=0,leg='';
- for(const[k,v] of Object.entries(d.overlays)){const s=c.addLineSeries({color:cols[i%4],lineWidth:1.5,priceLineVisible:false,lastValueVisible:false});s.setData(v.map((y,j)=>y==null?null:{time:T(d.candles[j].t),value:y}).filter(Boolean));leg+=`<span style="color:${cols[i%4]}">${esc(k)}</span>`;i++;}
- const mk=[];for(let j=1;j<d.position.length;j++)if(d.position[j]!==d.position[j-1])mk.push({time:T(d.candles[j].t),position:d.position[j]>0?'belowBar':'aboveBar',color:d.position[j]>0?'#39ff88':d.position[j]<0?'#ff3b5c':'#888',shape:d.position[j]>0?'arrowUp':d.position[j]<0?'arrowDown':'circle',text:d.position[j]>0?'L':d.position[j]<0?'S':'flat'});
- cs.setMarkers(mk);const st=d.split_time;if(st>=d.candles[0].t)leg+=`<span class="dim">out-of-sample starts ${sast(st)} SAST</span>`;$('#lableg').innerHTML=leg+`<span class="dim">markers = ${esc(b.family)} signals (not bot trades)</span>`;c.timeScale().fitContent();}
+async function markets(force){if(!labSum||force){try{labSum=await (await fetch('/api/lab?key=summary')).json();}catch(e){labSum=null;}}
+ const s=labSum;if(!s||s.error||!Array.isArray(s.symbols)){$('#lab').innerHTML=`<div class="panel"><div class="ph"><b>MARKETS</b></div><p class="dim small">${s&&s.error?'Market list not published yet.':'Market list unavailable (sign in, or try again shortly).'}</p></div>`;return;}
+ const row=x=>x.error?`<tr><td>${esc(x.name)}</td><td colspan=2 class="dim">data error</td></tr>`:`<tr><td><b>${esc(x.name)}</b></td><td>${fmt(x.last,dp(x.last))}</td><td class="${x.chg_24h_pct>=0?'up':'dn'}">${pct(x.chg_24h_pct)}</td></tr>`;
+ const tbl=k=>`<div class="tw"><table><tr><th scope="col">SYMBOL</th><th scope="col">LAST</th><th scope="col">24H</th></tr>${s.symbols.filter(x=>x.kind===k).map(row).join('')}</table></div>`;
+ $('#lab').innerHTML=`<div class="panel"><div class="ph"><b>MARKETS</b><span class="dim small">snapshot ${sast(s.generated_at)} SAST · refreshed every 4h by the bot box · strategy research lives in <a href="/rnd" data-go="rnd">R&amp;D →</a></span></div>
+ <h4 class="dim">CRYPTO · Kraken (live)</h4>${tbl('crypto')}<h4 class="dim">FOREX &amp; GOLD · Yahoo (unofficial, delayed)</h4>${tbl('fx')}</div>`;}
 // ---------------- ENGINE LEARNING LOOP + GUARDS
 let cal=null;
 async function learn(force){const s=window.S.d?.state;if(!s){$('#learn').innerHTML='';return;}const k=JSON.stringify([s.generated_at,window.CUR]);if(!force&&L.learn===k)return;L.learn=k;
  if(!cal)try{cal=await (await fetch('/api/calendar')).json();}catch{cal={events:[]};}
  const h=s.bot_health||{},fuel=h.risk_fuel,g=h.guard,now=Date.now()/1000;const up=(cal.events||[]).filter(e=>e.impact==='High'&&Date.parse(e.date)/1000>now-3600).slice(0,6);
  const vers=s.proof?.versions||[];const fp=fuel?Math.max(0,Math.min(100,fuel.remaining_pct)):100;
- $('#learn').innerHTML=`<div class="row2"><div class="panel"><div class="ph"><b>LEARNING LOOP · VERSION TIMELINE</b><span class="dim small">${vers.length} version(s) · ${s.challenge.deaths} death(s) · respawn from ${M(s.challenge.start_usd,0)}</span></div>
- <ol class="feed">${vers.slice().reverse().map(v=>`<li><span class="t">${esc(v.started_SAST)}</span><span><b>${esc(v.version)}</b> · <span class="${v.status==='running'?'up':'dn'}">${esc(v.status)}</span> · ${v.trades} trades · ${M(+v.pnl_usd)}<br><span class="dim">${esc(v.params)}${v.engine_hash?' · engine #'+esc(v.engine_hash):''}</span></span></li>`).join('')}</ol>
- <div class="ph" style="margin-top:10px"><b>LESSONS</b></div><ol class="feed">${(s.lessons||[]).slice().reverse().map(l=>`<li><span class="t">${esc(l.ts)} ${esc(l.version)}</span><span>${esc(l.lesson)}</span></li>`).join('')}</ol>
+ $('#learn').innerHTML=`<div class="row2"><div class="panel"><div class="ph"><b>LEARNING LOOP</b><span class="dim small">${vers.length} version(s) · ${s.challenge.deaths} death(s) · full version history in <a href="/bot" data-go="bot" data-sec="botVers">Bot › Version leaderboard →</a></span></div>
+ <div class="ph"><b>LESSONS</b></div><ol class="feed">${(s.lessons||[]).slice().reverse().map(l=>`<li><span class="t">${esc(l.ts)} ${esc(l.version)}</span><span>${esc(l.lesson)}</span></li>`).join('')}</ol>
  <div class="ph" style="margin-top:10px"><b>REBUILD CANDIDATES (from strategy lab)</b></div><p class="small">${s.rebuild_candidates?.candidates?.length?s.rebuild_candidates.candidates.map(c=>`${esc(c.symbol)}: ${esc(c.family)} (${c.params.join(', ')}) grade ${c.grade}`).join('<br>'):'None qualify yet: no crypto strategy passed out-of-sample after fees. On the next death the bot respawns on the pulse-engine baseline.'}</p></div>
  <div class="panel"><div class="ph"><b>RISK FUEL · DAILY LOSS BUDGET</b><span class="dim small">10% of start-of-day equity</span></div>
  <svg viewBox="0 0 200 110" style="width:100%;max-width:280px"><path d="M20 100 A80 80 0 0 1 180 100" stroke="#13261c" stroke-width="14" fill="none"/><path d="M20 100 A80 80 0 0 1 180 100" stroke="${fp>50?'#39ff88':fp>20?'#ffd23f':'#ff3b5c'}" stroke-width="14" fill="none" stroke-dasharray="${(fp/100*251).toFixed(1)} 400"/><text x="100" y="92" text-anchor="middle" style="fill:#effff5;font-size:22px;font-weight:800">${fmt(fp,0)}%</text></svg>
@@ -74,53 +52,3 @@ function proof(force){const s=window.S.d?.state;if(!s){$('#proof').innerHTML='<d
  $('#csv').onclick=()=>{const k=['time_SAST','version','workspace','pair','action','qty','price','cost_usd','fee_usd','sl','tp','pnl_usd','reason','engine_version','engine_hash','prev_hash','chain_hash'];dl('northline_paper_trades.csv',[k,...tr.map(t=>k.map(c=>t[c]))]);};
  $('#csv2').onclick=()=>{const v=P.versions||[],k=v[0]?Object.keys(v[0]):[];dl('northline_versions.csv',[k,...v.map(r=>k.map(c=>r[c]))]);};
  $('#jsave').onclick=()=>{notes[new Date().toISOString().slice(0,10)]=$('#jn').value;localStorage.setItem('nl_journal',JSON.stringify(notes));L.proof=null;proof(true);};}
-// ---------------- TRADE DESK
-async function trade(){let st;try{st=await (await fetch('/api/mt5')).json();}catch(e){st={connected:false,setup:[],message:e.message};}
- const dis=!st.connected;
- $('#trade').innerHTML=`<div class="panel"><div class="ph"><b>TRADE DESK · MT5 BRIDGE</b><span class="${dis?'dn':'up'} small">${dis?'● DISCONNECTED':'● CONNECTED · DEMO'}</span></div>
- <p class="headline">${dis?'MT5 is not connected yet. Nothing here can place an order until a <b>DEMO</b> MT5 account is linked. The bridge refuses any account that is not demo, on every request.':`Connected to demo account at ${esc(st.account?.broker)} (${esc(st.account?.server)}).`}</p>
- <div class="row2"><form id="of" class="panel" onsubmit="return false"><div class="ph"><b>ORDER (DEMO)</b><span class="dim small">SL and TP are mandatory</span></div>
- <label class="small">Symbol <input id="o_sym" value="EURUSD" ${dis?'disabled':''}></label><label class="small">Side <select id="o_side" ${dis?'disabled':''}><option>buy</option><option>sell</option></select></label>
- <label class="small">Risk % of demo balance <input id="o_risk" type="number" step="0.1" value="1" ${dis?'disabled':''}></label><label class="small">Lots <input id="o_lots" type="number" step="0.01" value="0.01" ${dis?'disabled':''}></label>
- <label class="small">Stop-loss price <input id="o_sl" type="number" step="any" required ${dis?'disabled':''}></label><label class="small">Take-profit price <input id="o_tp" type="number" step="any" required ${dis?'disabled':''}></label>
- <button id="o_go" class="ibtn wide" ${dis?'disabled':''}>${dis?'Connect MT5 demo first':'Place DEMO order'}</button><p id="o_msg" class="small dim"></p></form>
- <div class="panel"><div class="ph"><b>POSITIONS (DEMO)</b></div><div id="pos" class="dim small">${dis?'No account connected.':'Loading…'}</div></div></div></div>
- ${dis?`<div class="panel"><div class="ph"><b>CONNECT MT5 DEMO: SETUP</b></div><ol class="small">${(st.setup||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
- <p class="small">Alternative (no cloud bridge): an MT5 <b>Expert Advisor</b> on a demo terminal polls this OS for queued demo orders and reports fills back. See the documented design.</p></div>`:''}`;
- if(!dis){const p=await (await fetch('/api/mt5?op=positions')).json();$('#pos').innerHTML=(p.positions||[]).map(x=>`<div>${esc(x.symbol)} ${esc(x.type)} ${x.volume} @ ${x.openPrice} · SL ${x.stopLoss} TP ${x.takeProfit} · P&L ${x.profit}</div>`).join('')||'flat';
-  $('#o_go').onclick=async()=>{const b={symbol:$('#o_sym').value,side:$('#o_side').value,lots:+$('#o_lots').value,sl:+$('#o_sl').value,tp:+$('#o_tp').value};if(!b.sl||!b.tp){$('#o_msg').textContent='SL and TP are mandatory.';return;}
-   const r=await (await fetch('/api/mt5?op=order',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)})).json();$('#o_msg').textContent=JSON.stringify(r).slice(0,300);trade();};}}
-
-let BS=null,bch=null;
-const cls=c=>c==='useful'?'up':c==='harmful'?'dn':'dim',r3=x=>x==null?'—':(x>=0?'+':'')+(+x).toFixed(3);
-async function builder(){const box=$('#builder');if(!BS){box.innerHTML='<div class="panel sk">Loading builder…</div>';try{BS=await (await fetch('/builder/summary.json')).json();}catch(e){box.innerHTML='<div class="panel">Builder results unavailable.</div>';return;}}
- const s=BS,np=s.validated.filter(v=>v.passed).length;
- box.innerHTML=`<div class="panel"><div class="ph"><b>STRATEGY BUILDER</b><span class="delayed">RESEARCH · PAPER ONLY</span></div>
- <p><b>${np?np+' rule(s) passed':'Nothing passed.'}</b> ${s.combos_tried} confluence rules tried on 1 year of 1h data (${esc(s.window)}), ending before the Strait of Hormuz closure (${s.hormuz.date}). Every single indicator was <i>neutral</i> against random entries after costs. No rule is a bot candidate.</p>
- <p class="dim">Model: next-bar entry, stop 1.5 ATR, target 3 ATR (2R), 72h max, costs included. 70% discover / 30% confirm. Hormuz source: ${s.hormuz.src.map(esc).join(' · ')}.</p></div>
- <div class="panel" id="pairsP"><div class="ph"><b>PAIR / TRIO SEARCH</b><span class="delayed">2–3 INDICATORS ONLY</span></div><div class="dim">Loading…</div></div>
- <div class="panel"><div class="ph"><b>BOS / CHoCH MAP</b><select id="bsym">${s.markets.map(m=>`<option${m==='BTCUSD'?' selected':''}>${m}</option>`).join('')}</select></div>
- <div id="bchart" style="height:380px;position:relative"><div id="btip" style="position:absolute;z-index:5;pointer-events:none;display:none;max-width:340px;background:#0b1220ee;border:1px solid #334;padding:6px 8px;border-radius:6px;font-size:12px"></div></div>
- <p class="dim">▲ green = up, ▼ red = down. B = break of structure, C = change of character. Hover a candle with a marker to see why it fired. Last 1,000 hours of the window.</p></div>
- <div class="panel"><div class="ph"><b>INDICATOR SCORECARD</b><span>mean R per trade vs random</span></div><div class="tw"><table><tr><th>INDICATOR</th><th>IS n</th><th>IS R</th><th>RANDOM</th><th>p</th><th>IS</th><th>OOS n</th><th>OOS R</th><th>OOS</th></tr>
- ${Object.entries(s.scorecard).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.IS.n}</td><td>${r3(v.IS.mean_R)}</td><td class="dim">${r3(v.IS.baseline_mean_R)}</td><td>${(+v.IS.p_vs_random).toFixed(2)}</td><td class="${cls(v.cIS)}">${v.cIS}</td><td>${v.OOS.n}</td><td>${r3(v.OOS.mean_R)}</td><td class="${cls(v.cOOS)}">${v.cOOS}</td></tr>`).join('')}</table></div></div>
- <div class="panel"><div class="ph"><b>BEST CONFLUENCE RULES → OUT-OF-SAMPLE</b></div><div class="tw"><table><tr><th>GROUP</th><th>RULE</th><th>N</th><th>IS n</th><th>IS R</th><th>OOS n</th><th>OOS R</th><th>RESULT</th></tr>
- ${s.validated.map(v=>`<tr><td>${esc(v.group)}</td><td>${v.combo.map(esc).join(' + ')}</td><td>${v.N}</td><td>${v.IS.n}</td><td>${r3(v.IS.mean_R)}</td><td>${v.OOS?v.OOS.n:'—'}</td><td>${v.OOS?r3(v.OOS.mean_R):'—'}</td><td class="${v.passed?'up':'dn'}">${v.passed?'PASS':'fail'}</td></tr>`).join('')}</table></div></div>
- <details class="adv panel"><summary>Why structure broke: best &amp; worst slices</summary><div class="tw"><table><tr><th>EVENT</th><th>FEATURE</th><th>VALUE</th><th>IS n</th><th>IS R</th><th>OOS n</th><th>OOS R</th></tr>${s.why.map(w=>`<tr><td>${w.event}</td><td>${esc(w.feature)}</td><td>${esc(w.value)}</td><td>${w.n_IS}</td><td>${r3(w.mean_R_IS)}</td><td>${w.n_OOS}</td><td>${r3(w.mean_R_OOS)}</td></tr>`).join('')}</table></div></details>`;
- $('#bsym').onchange=e=>bchart(e.target.value);bchart('BTCUSD');pairs();}
-async function pairs(){const el=$('#pairsP');let p;try{p=await (await fetch('/builder/pairs.json')).json();}catch(e){el.innerHTML+='<p>Unavailable.</p>';return;}
- const row=v=>`<tr><td>${esc(v.m)}</td><td>${v.ind.map(esc).join(v.mode==='seq'?' → ':' + ')}</td><td>${v.mode==='seq'?'in order':'together'} ≤${v.N}h</td><td>${v.pre.n}</td><td>${r3(v.pre.mean_R)}</td><td>${v.fp}/3</td><td>${v.ho.n}</td><td class="${v.ho.mean_R>0?'up':'dn'}">${r3(v.ho.mean_R)}</td></tr>`;
- el.innerHTML=`<div class="ph"><b>PAIR / TRIO SEARCH</b><span class="delayed">2–3 INDICATORS ONLY</span></div>
- <p><b>${p.winners.length?p.winners.length+' winner(s)':'No winner yet.'}</b> ${p.rules.toLocaleString()} pair and trio rules × ${p.markets.length} markets = ${p.tests.toLocaleString()} tests (${p.indicators.length} indicators, together or in order). ${p.wf.toLocaleString()} were positive in all walk-forward folds, but after the multiple-testing check (Benjamini-Hochberg) <b>${p.bh}</b> were real. Only ${p.naive} also passed the 20% holdout, about what luck alone gives.</p>
- <p class="dim">A winner must: pass 3 walk-forward folds, survive the multiple-testing check, and win on the untouched last 20% with 30+ trades, costs included. Crypto long-only; FX and commodities both ways. ${esc(p.gaps)}</p>
- <div class="tw"><table><tr><th>MARKET</th><th>RULE</th><th>HOW</th><th>TRAIN n</th><th>TRAIN R</th><th>FOLDS</th><th>HOLDOUT n</th><th>HOLDOUT R</th></tr>${(p.winners.length?p.winners:p.near).map(row).join('')}</table></div><p class="dim">${p.winners.length?'Winners, pending Lulu Risk review.':'Near misses, watchlist only, not bot candidates.'}</p>`;}
-async function bchart(sym){await loadLW();const el=$('#bchart'),tip=$('#btip');if(bch){bch.remove();bch=null;}
- const d=await (await fetch('/builder/'+sym+'.json')).json();
- bch=LightweightCharts.createChart(el,{height:380,layout:{background:{color:'transparent'},textColor:'#9aa4b2'},grid:{vertLines:{color:'#1c2433'},horzLines:{color:'#1c2433'}},timeScale:{timeVisible:true}});
- const ser=bch.addCandlestickSeries({upColor:'#22c55e',downColor:'#ef4444',wickUpColor:'#22c55e',wickDownColor:'#ef4444',borderVisible:false});
- ser.setData(d.c.map(([time,open,high,low,close])=>({time,open,high,low,close})));
- const by={};d.e.forEach(e=>(by[e.t]??=[]).push(e.why));
- ser.setMarkers(d.e.map(e=>({time:e.t,position:e.d==='up'?'belowBar':'aboveBar',shape:e.d==='up'?'arrowUp':'arrowDown',color:e.d==='up'?'#22c55e':'#ef4444',text:e.k==='BOS'?'B':'C'})));
- bch.timeScale().setVisibleLogicalRange({from:d.c.length-250,to:d.c.length});
- bch.subscribeCrosshairMove(p=>{const w=p.time&&by[p.time];if(!w||!p.point){tip.style.display='none';return;}tip.innerHTML=w.map(esc).join('<hr style="border-color:#334">')+'<div class="dim">'+sast(p.time)+' SAST</div>';tip.style.display='block';tip.style.left=Math.min(p.point.x+12,el.clientWidth-350)+'px';tip.style.top=(p.point.y+12)+'px';});
- new ResizeObserver(()=>bch&&bch.applyOptions({width:el.clientWidth})).observe(el);}
