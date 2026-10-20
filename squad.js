@@ -40,6 +40,7 @@ function race(V){const s=window.S?.d?.state||MAIN0?.state||null,ch=s?.challenge|
  R.push({id:'v5',eq:ch?.equity_usd,dl:ch?.death_below_usd,gen:ch?(ch.version||'—')+(ch.deaths!=null?` · ${ch.deaths} death${ch.deaths===1?'':'s'}`:''):null});
  for(const[b,v]of V)R.push({id:b.id,eq:v.eq,dl:v.DL,gen:b.life!=null?'life '+b.life:null});
  for(const b of (window.NL_HB?.indie?.bots||[]))if(b&&b.id)R.push({id:b.id,sp:true,eq:b.balance,pct:b.progress_pct,st:b.status,gen:b.generation!=null?'gen '+b.generation:null});
+ {const B=window.NL_HB?.scoreboard?.bots||{};for(const r of R){const x=B[r.id];if(x&&x.balance!=null&&!isNaN(x.balance)){r.eq=+x.balance;r.pct=null;}}}
  R.sort((a,b)=>(+b.eq||-1)-(+a.eq||-1));
  const SB=window.NL_HB?.scoreboard?.bots||{},sc=r=>{const x=SB[r.id];if(!x)return '<td>—</td><td>—</td><td>—</td><td>—</td>';return `<td>${esc(x.closed_trades)}</td><td>${x.win_rate_after_fees==null?'—':(x.win_rate_after_fees*100).toFixed(0)+'%'}</td><td class="${x.net_pnl_after_fees>0?'up':x.net_pnl_after_fees<0?'dn':'dim'}">${x.net_pnl_after_fees<0?'−':''}${$m(Math.abs(x.net_pnl_after_fees))}</td><td>${x.trades_to_judgement?esc(x.trades_to_judgement):'<b class="up">ready</b>'}</td>`;};
  const row=(r,i)=>{const ok=r.eq!=null&&!isNaN(r.eq),pct=r.pct!=null&&!isNaN(r.pct)?+r.pct:ok?r.eq/G*100:null,dead=r.st?!/alive/i.test(r.st):ok&&r.dl!=null?r.eq<r.dl:null;
