@@ -31,17 +31,19 @@ export async function showBots(sel='#botSquad'){const el=document.querySelector(
   ${v.open.some(p=>p.stake_usd!=null)?`<div class="small">open: ${v.open.length} copied position${v.open.length>1?'s':''} · $${esc(v.open.reduce((s,p)=>s+(+p.stake_usd||0),0).toFixed(0))} staked</div><details class="small"><summary>show details (token + leader wallet addresses)</summary><div style="word-break:break-all">${v.open.map(p=>`${esc(p.m)} · $${esc(p.stake_usd)} · leader ${esc(p.leader||'—')}${p.opened_sast?' · '+esc(p.opened_sast):''}`).join('<br>')}</div></details>`:''}
   <div class="small">${v.open.some(p=>p.stake_usd!=null)?'':v.open.length?'open: '+v.open.map(p=>p.stake_usd!=null?`${esc(String(p.m).slice(0,10))} $${esc(p.stake_usd)} stake (leader ${esc(p.leader||'—')})`:p.entry==null&&p.limit!=null?`${esc(p.m)} limit ${esc(p.limit)} (not filled)`:`${esc(p.m)} @ ${esc(p.entry)} (SL ${esc(p.sl??'—')})`).join(', '):'no open positions'} · ${b.closed||0} closed this life</div>
   <ul>${v.strats.map(s=>`<li><b>${esc(s.x.family||'?')} ${esc(s.x.tf||'')}</b> <span class="${s.t&&s.t.n?'':'dim'}">${esc(s.txt)}</span><br><span class="dim">${esc(s.x.id)} · ${s.x.tested?`lab OOS n ${s.x.oos_n??'—'} · ΣR ${s.x.oos_total_R??'—'}`:'untested in lab'}</span></li>`).join('')}</ul></div></details>`).join('')}</div>`;}).join('');})()}</div>`;
- try{el.insertAdjacentHTML('beforeend',race(V));}catch{}
+ try{RV=V;el.insertAdjacentHTML('beforeend',race(V));}catch{}
  el.querySelector('[data-go]')?.addEventListener('click',e=>{e.preventDefault();window.go&&window.go('rnd');});}
 
 // ---------- Race leaderboard (2026-10-20, pending approval): v5 + S1-S23 from data already loaded; '—' when missing ----------
+let RV=null;addEventListener('nl-hb',()=>{try{const o=document.querySelector('.rc');if(o&&RV)o.outerHTML=race(RV);}catch{}});
 function race(V){const s=window.S?.d?.state||MAIN0?.state||null,ch=s?.challenge||null,G=+(ch?.goal_usd)||100000,R=[];
  R.push({id:'v5',eq:ch?.equity_usd,dl:ch?.death_below_usd,gen:ch?(ch.version||'—')+(ch.deaths!=null?` · ${ch.deaths} death${ch.deaths===1?'':'s'}`:''):null});
  for(const[b,v]of V)R.push({id:b.id,eq:v.eq,dl:v.DL,gen:b.life!=null?'life '+b.life:null});
+ for(const b of (window.NL_HB?.indie?.bots||[]))if(b&&b.id)R.push({id:b.id,sp:true,eq:b.balance,pct:b.progress_pct,st:b.status,gen:b.generation!=null?'gen '+b.generation:null});
  R.sort((a,b)=>(+b.eq||-1)-(+a.eq||-1));
- const row=(r,i)=>{const ok=r.eq!=null&&!isNaN(r.eq),pct=ok?r.eq/G*100:null,dead=ok&&r.dl!=null?r.eq<r.dl:null;
-  return `<tr><td>${i+1}</td><td><b>${esc(r.id)}</b></td><td>${ok?$m(r.eq):'—'}</td><td class="rc-p">${pct==null?'—':`<span class="rc-bar"><i style="width:${Math.max(.5,Math.min(100,pct))}%"></i></span> ${pct.toFixed(2)}%`}</td><td>${dead==null?'—':dead?'<b class="dn">blown up</b>':'<span class="up">alive</span>'}</td><td>${esc(r.gen??'—')}</td></tr>`;};
- return `<div class="panel bs rc"><div class="row"><span class="ban">■ RACE TO ${$m(G).replace('.00','')}</span><span class="dim small">paper balances · v5 + squad · progress = balance ÷ goal</span></div><div class="rc-w"><table class="rc-t"><thead><tr><th>#</th><th>bot</th><th>balance</th><th>progress to ${$m(G).replace('.00','')}</th><th>status</th><th>gen / life</th></tr></thead><tbody>${R.map(row).join('')}</tbody></table></div></div>`;}
+ const row=(r,i)=>{const ok=r.eq!=null&&!isNaN(r.eq),pct=r.pct!=null&&!isNaN(r.pct)?+r.pct:ok?r.eq/G*100:null,dead=r.st?!/alive/i.test(r.st):ok&&r.dl!=null?r.eq<r.dl:null;
+  return `<tr><td>${i+1}</td><td><b>${esc(r.id)}</b>${r.sp?' <span class="bs-p" style="color:#ff5ec8;border-color:#ff5ec8">SPECIAL</span>':''}</td><td>${ok?$m(r.eq):'—'}</td><td class="rc-p">${pct==null?'—':`<span class="rc-bar"><i style="width:${Math.max(.5,Math.min(100,pct))}%"></i></span> ${pct.toFixed(2)}%`}</td><td>${dead==null?'—':dead?'<b class="dn">blown up</b>':'<span class="up">alive</span>'}</td><td>${esc(r.gen??'—')}</td></tr>`;};
+ return `<div class="panel bs rc"><div class="row"><span class="ban">■ RACE TO ${$m(G).replace('.00','')}</span><span class="dim small">paper balances · v5 + squad + SPECIAL independent bots · progress = balance ÷ goal</span></div><div class="rc-w"><table class="rc-t"><thead><tr><th>#</th><th>bot</th><th>balance</th><th>progress to ${$m(G).replace('.00','')}</th><th>status</th><th>gen / life</th></tr></thead><tbody>${R.map(row).join('')}</tbody></table></div></div>`;}
 // ---------- bot groups (style + market), assigned from the data so new bots fall in automatically ----------
 export const GROUPS=[
  {k:'main',name:'MAIN',col:0x39ff88,desc:'The v5 crypto swing bot: pulse engine, 30m checks. PAPER.'},

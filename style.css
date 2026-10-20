@@ -260,3 +260,4 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 /* race leaderboard */
 .rc-w{overflow-x:auto}.rc-t{width:100%;border-collapse:collapse;font-size:12px}.rc-t th,.rc-t td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--ln);white-space:nowrap}.rc-p{min-width:150px}.rc-bar{display:inline-block;width:90px;height:6px;background:#0e2418;border-radius:3px;vertical-align:middle;overflow:hidden}.rc-bar i{display:block;height:100%;background:#39ff88}
 @media (max-width:640px){.rc-p{min-width:0}.rc-bar{width:36px}.rc-t th,.rc-t td{padding:4px 3px}}
+.rn-ii{margin:2px 0 0 16px;padding:0}.rn-ii li{margin:2px 0}
