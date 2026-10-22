@@ -59,7 +59,7 @@ function login(done){
   <div class="honest"><b>Honest status:</b> paper trading only, no live money. The bot is learning and no strategy is proven yet. This is a research desk, not financial advice.</div>
  </div>
  <form class="lg-card" id="lgForm" autocomplete="on"><h2>Sign in</h2><div class="sub" id="lgSub">Invite-only. Owner access. We email you a one-time sign-in link.</div>
-  <div id="lgEmailRow"><label for="lgEmail">Email</label><input id="lgEmail" type="email" autocomplete="username" required value="tradebotz.za@gmail.com"></div>
+  <div id="lgEmailRow"><label for="lgEmail">Email</label><input id="lgEmail" type="email" autocomplete="username" required></div>
   <button class="nlbtn pri" type="submit" id="lgGo">Email me a sign-in link</button>
   <div class="lg-msg" id="lgMsg"></div>
   <div class="lg-foot">Secured by Supabase Auth · registration by invite only</div></form></div>`);
