@@ -10,7 +10,7 @@ const b=document.createElement('button');b.id='rsCollapse';b.type='button';b.tit
 const set=c=>{document.body.classList.toggle('rs-col',c);b.textContent=c?'»':'«';try{localStorage.setItem('rs_col',c?'1':'0');}catch{}};
 b.onclick=()=>set(!document.body.classList.contains('rs-col'));document.body.append(b);set(localStorage.getItem('rs_col')==='1');
 // number ticker: when a big number is re-rendered with a new value, count from the old value to the new one
-const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,SEL='.px,.kpi .v,.bign',last=new Map();
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,SEL='.px,.kpi .v,.bign,.rk-v',last=new Map();
 const parse=s=>{const m=String(s).match(/-?[\d,]*\.?\d+/);return m?{n:parseFloat(m[0].replace(/,/g,'')),m:m[0],dec:(m[0].split('.')[1]||'').length,comma:m[0].includes(',')}:null;};
 const key=el=>{const c=el.closest('.card,.kpi,.panel');const l=c?.querySelector('.l,.pair,.ph b,h3')?.textContent||'';return el.className+'|'+l.trim().slice(0,30)+'|'+[...document.querySelectorAll(SEL)].indexOf(el);};
 function anim(el,from,to,p){if(el.children.length)return;const fmt=v=>{let s=v.toFixed(p.dec);if(p.comma){const [i,d]=s.split('.');s=i.replace(/\B(?=(\d{3})+(?!\d))/g,',')+(d!=null?'.'+d:'');}return el.dataset.rsTpl.replace('§',s);};
