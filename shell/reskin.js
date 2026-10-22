@@ -5,7 +5,11 @@ const nav=document.getElementById('tabs');
 function deco(){if(!nav)return;for(const a of nav.querySelectorAll('a[data-t]')){if(a.querySelector('.rs-lb'))continue;const kb=a.querySelector('.kb');
  const txt=[...a.childNodes].filter(n=>n!==kb).map(n=>n.textContent).join('').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu,'').trim();
  [...a.childNodes].forEach(n=>{if(n!==kb)n.remove();});const ic=document.createElement('span');ic.className='rs-ic';ic.textContent=IC[a.dataset.t]||'•';const lb=document.createElement('span');lb.className='rs-lb';lb.textContent=txt;a.prepend(ic,lb);a.title=txt;}}
-deco();if(nav)new MutationObserver(deco).observe(nav,{childList:true,subtree:true});
+// DESIGN PASS B: Engine moves under an ADVANCED group at the end of the nav (section, route /engine and key 2 unchanged)
+function adv(){if(!nav)return;const e=nav.querySelector('a[data-t="engine"]');if(!e)return;let g=nav.querySelector('.rs-grp');
+ if(!g){g=document.createElement('span');g.className='rs-grp';g.setAttribute('role','presentation');g.textContent='Advanced';}
+ if(nav.lastElementChild!==e||e.previousElementSibling!==g){nav.append(g,e);}}
+const navTick=()=>{deco();adv();};navTick();if(nav)new MutationObserver(navTick).observe(nav,{childList:true,subtree:true});
 const b=document.createElement('button');b.id='rsCollapse';b.type='button';b.title='Collapse sidebar';b.setAttribute('aria-label','Toggle sidebar');
 const set=c=>{document.body.classList.toggle('rs-col',c);b.textContent=c?'»':'«';try{localStorage.setItem('rs_col',c?'1':'0');}catch{}};
 b.onclick=()=>set(!document.body.classList.contains('rs-col'));document.body.append(b);set(localStorage.getItem('rs_col')==='1');
