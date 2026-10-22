@@ -1,0 +1,13 @@
+/* DESIGN PASS A (2026-10-22): motion. transform/opacity/dashoffset only. */
+.mo-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:mo-draw 1.1s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes mo-draw{to{stroke-dashoffset:0}}
+.mo-grow{transform-origin:left center;animation:mo-grow .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes mo-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.rc-t tbody tr{will-change:transform}
+.rc-t tr.mo-up td:first-child{animation:mo-flash-up 1.4s ease-out}.rc-t tr.mo-dn td:first-child{animation:mo-flash-dn 1.4s ease-out}
+@keyframes mo-flash-up{0%{box-shadow:inset 3px 0 0 #22c55e}100%{box-shadow:inset 3px 0 0 transparent}}
+@keyframes mo-flash-dn{0%{box-shadow:inset 3px 0 0 #ef4444}100%{box-shadow:inset 3px 0 0 transparent}}
+.tape-in{transform:translateZ(0)}
+.card,.rk-c,.pv-step{transition:transform .2s,border-color .2s}
+@media (hover:hover){.card:hover,.rk-c:hover{transform:translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){.mo-draw,.mo-grow{animation:none!important;stroke-dashoffset:0;transform:none}.card:hover,.rk-c:hover{transform:none}}
