@@ -4,12 +4,19 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const pc=v=>v==null||!isFinite(v)?'—':(v*100).toFixed(3)+'%',wr=v=>v==null?'—':Math.round(v*100)+'%';
 const BL_DEF={ema_trend:{defaults:{n:50},desc:'filter: long above EMA(n), short below'},ema_cross:{defaults:{fast:9,slow:21},desc:'trigger: fast EMA crosses slow EMA'},rsi:{defaults:{n:14,lo:30,hi:70,mode:'reversal'},desc:'reversal | momentum | no_chase'},roc:{defaults:{n:12,thr:1.5,mode:'momentum'},desc:'rate of change, thr in %'},breakout:{defaults:{n:20},desc:'close beyond n-bar high/low'},wickless:{defaults:{wick_pct:0.05,body_atr:0.2},desc:'candle with no wick on the open side'},sweep:{defaults:{n:3,max_atr:1.5},desc:'liquidity sweep of last fractal'},atr_regime:{defaults:{min_pct:0.2,max_pct:5},desc:'ATR % of price band'}};
 let D=null,blocks=[];
+const MINH=48,VCL={PROVEN:'live',TESTING:'warn','TOO FEW TRADES':'warn'};
+function clk(f){if(!f)return '';const st=+f.start_epoch||0,h=st?Math.max(0,(Date.now()/1000-st)/3600):(+f.hours_elapsed||0),mh=+f.min_hours||MINH,left=Math.max(0,mh-h),p=Math.min(100,h/mh*100);
+ const hh=Math.floor(left),mm=Math.floor((left-hh)*60);
+ return `<div class="lb-clk small"><div class="row"><b>${left>0?`⏱ ${hh}h ${String(mm).padStart(2,'0')}m left`:'⏱ 48h done: judged on forward trades'}</b><span class="dim">started ${esc(f.assigned_sast)} SAST · verdict due ${esc(f.verdict_due_sast||'—')} SAST</span></div>
+ <div class="lb-bar"><span style="width:${p.toFixed(1)}%"></span></div>
+ <div>${esc(f.closed??0)} forward trades · ${esc(f.wins??0)} wins · mean ${pc(f.mean)} · P&amp;L on $1k <b class="${(f.pnl_on_1k_usd||0)>=0?'up':'dn'}">${(f.pnl_on_1k_usd||0)>=0?'+':'−'}$${Math.abs(+f.pnl_on_1k_usd||0).toFixed(2)}</b> <span class="dim">(paper, after costs)</span></div></div>`;}
 async function load(){let d=window.NL_HB?.lab||null;
  if(!d&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){try{const r=await fetch('/lab_demo.json',{cache:'no-store'});if(r.ok)d=await r.json();}catch{}}
  return d;}
-function idea(x){const v=x.verdict==='PASS'?'up':x.verdict==='FAIL'?'dn':'a';
- return `<details class="panel lb-i"><summary><div class="row"><b>${esc(x.title||x.id)}</b><span class="badge ${x.verdict==='PASS'?'live':'off'}">${esc(x.verdict)}</span>${x.slot?`<span class="paper-tag">${esc(x.slot)} PAPER-TESTING</span>`:''}</div>
- <div class="small"><span class="${v}">${esc(x.why||'')}</span></div>
+function idea(x){const v=x.verdict==='PROVEN'?'up':x.verdict==='NOT PROVEN'?'dn':'a';
+ return `<details class="panel lb-i"><summary><div class="row"><b>${esc(x.title||x.id)}</b><span class="badge ${VCL[x.verdict]||'off'}">${esc(x.verdict)}</span>${x.slot?`<span class="paper-tag">${esc(x.slot)} PAPER-TESTING</span>`:''}</div>
+ <div class="small"><span class="${v}">${esc(x.why||'')}</span></div>${clk(x.fwd)}
+ <div class="small dim">backtest (information only, not a verdict): ${esc(x.bt_why||'—')}</div>
  <div class="small dim">prereg sha <b>${esc(x.prereg_sha||'—')}</b> · tested ${esc(x.tested_sast||'—')} SAST · ${esc(x.variants??'—')} variants · best ${esc(x.best_tf||'—')} ${esc(JSON.stringify(x.best_params||{}))} · OOS n ${esc(x.oos_n??'—')} · mean ${pc(x.oos_mean)} · win ${wr(x.oos_wr)} · ${esc(x.source||'')}</div></summary>
  <div class="lb-t"><table class="small"><thead><tr><th>tf</th><th>params</th><th>IS n</th><th>IS mean</th><th>IS −3SE</th><th>OOS n</th><th>OOS mean</th><th>OOS −3SE</th><th>OOS win</th></tr></thead><tbody>
  ${(x.rows||[]).map(r=>`<tr><td>${esc(r.tf)}</td><td>${esc(Object.entries(r.params||{}).map(([k,v])=>k+'='+v).join(' '))}</td><td>${esc(r.is_n)}</td><td>${pc(r.is_mean)}</td><td>${pc(r.is_lb)}</td><td>${esc(r.oos_n)}</td><td class="${r.oos_mean>0?'up':'dn'}">${pc(r.oos_mean)}</td><td class="${r.oos_lb>0?'up':'dn'}">${pc(r.oos_lb)}</td><td>${wr(r.oos_wr)}</td></tr>`).join('')}</tbody></table></div></details>`;}
@@ -44,9 +51,9 @@ export async function show(){const el=document.getElementById('idealab');if(!el)
  D=await load();const d=D,I=d?.ideas||[],S=d?.slots||{},F=d?.forward||{};
  if(!blocks.length)blocks=[{type:'ema_trend',params:{n:50}},{type:'rsi',params:{n:14,lo:30,hi:70,mode:'reversal'}}];
  el.innerHTML=`<div class="panel"><div class="row"><span class="ban">■ IDEA LAB · PAPER ONLY · NO AI CALLS</span><span class="dim small">${d?`updated ${esc(d.updated_sast)} SAST`:'no lab data yet (sign in, or the box has not published the lab row)'}</span></div>
- <p class="dim small">Ideas are backtested on the box by a plain script on Kraken Futures candles. Gate: ${esc(d?.gates||'OOS n ≥ 30 and mean − 3SE > 0 after 0.62% costs')}. A PASS gets one idle bot slot for forward paper testing; a FAIL is just recorded.</p>
+ <p class="dim small">Ideas are backtested on the box by a plain script on Kraken Futures candles. Gate: ${esc(d?.gates||'OOS n ≥ 30 and mean − 3SE > 0 after 0.62% costs')}. Every idea gets its own bot slot and at least 48h of forward paper trading before any verdict. The backtest is shown for information only; it is never a pass or a fail.</p>
  <div class="lb-g small"><div><b>Queue</b><br>${(d?.queue||[]).length?d.queue.map(esc).join('<br>'):'<span class="dim">empty: the box runs new specs every 10 min</span>'}</div>
- <div><b>Bot slots</b><br>${['S2','S18'].map(s=>{const a=S[s],f=F[s];return `${s}: ${a?`testing <b>${esc(a.idea)}</b> since ${esc(a.assigned_sast)}${f?` · ${f.closed} fwd closed · mean ${pc(f.mean)}`:''}`:'<span class="dim">idle</span>'}`;}).join('<br>')}</div>
- <div><b>Record</b><br>${I.filter(x=>x.verdict==='PASS').length} pass · ${I.filter(x=>x.verdict==='FAIL').length} fail · ${I.length} total</div></div></div>
+ <div><b>Bot slots</b><br>${Object.keys(S).length?Object.keys(S).map(s=>{const a=S[s],f=F[s];return `${esc(s)}: testing <b>${esc(a.idea)}</b>${f?` · ${esc(f.verdict)} · ${Math.max(0,(+f.min_hours||MINH)-(Date.now()/1000-(+f.start_epoch||0))/3600).toFixed(1)}h left · ${f.closed} fwd trades`:''}`;}).join('<br>'):'<span class="dim">no ideas testing</span>'}${(d?.waiting||[]).length?`<br><span class="dim">waiting for a slot: ${d.waiting.map(esc).join(', ')}</span>`:''}</div>
+ <div><b>Record</b><br>${I.filter(x=>x.verdict==='TESTING').length} testing · ${I.filter(x=>x.verdict==='PROVEN').length} proven · ${I.filter(x=>x.verdict==='NOT PROVEN').length} not proven · ${I.filter(x=>x.verdict==='TOO FEW TRADES').length} too few trades</div></div></div>
  ${I.map(idea).join('')||''}${builder(d)}`;
  wire(d);}
