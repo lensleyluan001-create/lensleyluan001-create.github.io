@@ -1,0 +1,49 @@
+// Pulse engine view for the Charts tab (2026-10-22, display only). PAPER ONLY.
+// Reads the engine's OWN published output (S.d.pulse / /api/pulse, computed by the unchanged engine/pulse.js) and the
+// engine config (/api/pulse?meta=1). It never computes a verdict itself: the step-by-step weights below are an explanation
+// rebuilt from the engine's rounded readings, and the score/decision shown are the engine's own numbers.
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let CFG=null,OPEN=new Set(['score']),LAST='';
+const cfg=()=>CFG??=fetch('/api/pulse?meta=1').then(r=>r.json()).then(j=>j.config).catch(e=>{CFG=null;throw e;});
+const cl=(v,lo=-1,hi=1)=>Math.max(lo,Math.min(hi,v));
+const f=(v,n=2)=>v==null||isNaN(v)?'—':(+v).toFixed(n);
+const ok=b=>b?'<b class="pv-ok">✔ pass</b>':'<b class="pv-no">✘ fail</b>';
+function host(){let el=document.getElementById('pvBox');if(el)return el;const ch=document.getElementById('chart')?.closest('.panel');if(!ch)return null;
+ el=document.createElement('div');el.id='pvBox';el.className='panel pv';ch.after(el);
+ el.addEventListener('click',e=>{const s=e.target.closest('[data-pvs]')?.dataset.pvs;if(s){OPEN.has(s)?OPEN.delete(s):OPEN.add(s);el.querySelector(`[data-pvb="${s}"]`)?.classList.toggle('hidden');e.target.closest('[data-pvs]').classList.toggle('on');return;}
+  if(e.target.closest('[data-pvall]')){const all=[...el.querySelectorAll('[data-pvs]')].map(x=>x.dataset.pvs);const open=OPEN.size<all.length;OPEN=new Set(open?all:[]);LAST='';render(window.__pvLast);}
+  if(e.target.closest('[data-pvplay]'))play(el);});return el;}
+function play(el){const st=[...el.querySelectorAll('.pv-step')];st.forEach(s=>s.classList.remove('pv-lit'));st.forEach((s,i)=>setTimeout(()=>{s.classList.add('pv-lit');s.scrollIntoView?.({block:'nearest',behavior:'smooth'});},i*450));setTimeout(()=>st.forEach(s=>s.classList.remove('pv-lit')),st.length*450+1500);}
+export async function show(coin,pair){const el=host();if(!el)return;window.__pvLast={coin,pair};
+ let C;try{C=await cfg();}catch{el.innerHTML='<div class="ph"><b class="c">◈ PULSE ENGINE VIEW</b></div><div class="dim small">engine config unavailable</div>';return;}
+ if(window.__pvLast?.coin!==coin)return;const covered=!!(pair&&C.pairs&&C.pairs[pair]);
+ if(!covered){el.innerHTML=`<div class="ph"><b class="c">◈ PULSE ENGINE VIEW</b><span class="dim small">${esc(coin)}</span></div><div class="pv-nc"><div class="pv-nc-i">⊘</div><div><b>${esc(coin)} is not covered by the engine.</b><br><span class="dim">The pulse engine (hash cb3ed0d29ecbe129) only scores its ${Object.keys(C.pairs).length} configured pairs (${Object.values(C.pairs).map(x=>esc(x.label.split('/')[0])).join(', ')}). Nothing is computed for ${esc(coin)} rather than faked. The chart above is Kraken spot price only.</span></div></div>`;LAST='';return;}
+
+ let P=window.S?.d?.pulse?.pairs?.[pair];if(!P){try{P=(await (await fetch('/api/pulse')).json()).pairs?.[pair];}catch{}}
+ if(window.__pvLast?.coin!==coin)return;render({coin,pair,covered,P,C});}
+function render(o){if(!o||!o.covered)return;const el=host();if(!el)return;const {coin,P,C}=o;if(!P||!C){LAST='';el.innerHTML='<div class="ph"><b class="c">◈ PULSE ENGINE VIEW</b></div><div class="dim small">waiting for the engine reading…</div>';return;}
+ window.__pvLast=o;const key=JSON.stringify([coin,P.computed_at,P.score,[...OPEN]]);if(key===LAST)return;LAST=key;
+ const M=P.metrics||{},N=C.normalise,L=C.layers,W=C.weights,V=C.verdict,I=C.indicators,Ly=P.layers||{};
+ const s=P.direction==='short'?-1:1,rsiN=cl((M.rsi15-N.rsi_mid)/N.rsi_span),rocN=cl((M.roc6h_pct/100)/N.roc_full);
+ const parts=[['trend','Trend (EMA20h vs EMA50h)',W.trend,Math.max(0,M.trend*s)],['momentum','Momentum (RSI15 + ROC6h)',W.momentum,Math.max(0,M.momentum*s)],
+  ['location','Location (price vs EMA'+I.ema_loc+' 15m)',W.location,Ly.location?1:0],['book','Order book imbalance',W.book,cl(.5+M.book_imb*s,0,1)],
+  ['volatility','Volatility in band',W.volatility,Ly.volatility?1:0],['spread','Spread tight',W.spread,Ly.spread?1:0]];
+ const raw=parts.reduce((a,p)=>a+p[2]*p[3],0),fac=P.direction!=='none'?1:C.no_direction_factor,est=100*raw*fac;
+ const chase=M.rsi15>65?'up':M.rsi15<35?'down':null;
+ const step=(id,n,t,sum,body)=>`<div class="pv-step${OPEN.has(id)?' on':''}" data-pvs="${id}"><span class="pv-n">${n}</span><b>${t}</b><span class="pv-sum">${sum}</span></div><div class="pv-body${OPEN.has(id)?'':' hidden'}" data-pvb="${id}">${body}</div>`;
+ const vc=P.verdict==='TAKE'?'pv-take':P.verdict==='WATCH'?'pv-watch':'pv-aside';
+ const gauge=`<div class="pv-g"><div class="pv-gt"><i style="width:${cl(P.score,0,100)}%"></i><em style="left:${V.watch_min}%" title="WATCH ≥ ${V.watch_min}"></em><em style="left:${V.take_min}%" title="TAKE ≥ ${V.take_min}"></em></div><div class="pv-gl small dim"><span>0</span><span style="left:${V.watch_min}%">WATCH ${V.watch_min}</span><span style="left:${V.take_min}%">TAKE ${V.take_min}</span><span>100</span></div></div>`;
+ const age=P.computed_at?Math.max(0,Math.round(Date.now()/1000-P.computed_at)):null;
+ el.innerHTML=`<div class="ph"><b class="c">◈ PULSE ENGINE VIEW · ${esc(coin)}</b><span class="dim small">engine ${esc(P.engine_version)} · hash ${esc(P.engine_hash)} · reading ${age==null?'—':age<90?age+' s':Math.round(age/60)+' min'} old · paper only</span>
+ <span class="pv-tools"><button data-pvplay>▶ replay build</button><button data-pvall>expand / collapse all</button></span></div>
+ ${chase?`<div class="pv-chase">⚠ CHASING RISK · RSI15 ${f(M.rsi15,1)} is ${chase==='up'?'above 65':'below 35'}: the move has already run. Autopsy (22 Oct): 18 of 26 v5 entries were made in this zone and caused 78% of the loss (−$56.39 of −$72.19). A ${chase==='up'?'long':'short'} here is a late entry.</div>`:''}
+ <div class="pv-head"><div class="pv-dec ${vc}"><span class="small dim">final decision</span><b>${esc(P.verdict.replace('_',' '))}</b><span class="small">${P.direction==='none'?'no direction':esc(P.direction)} · ${esc(P.regime)} · ${esc(P.bias)}</span></div><div class="pv-sc"><span class="small dim">engine score</span><b>${f(P.score,1)}</b>${gauge}</div></div>
+ <div class="pv-flow">
+ ${step('in',1,'Inputs','Kraken '+esc(P.pair)+' · last '+f(P.last,P.last<10?4:2),`<div class="pv-kv"><span>last / bid / ask</span><b>${f(P.last,6)} / ${f(P.bid,6)} / ${f(P.ask,6)}</b><span>candles</span><b>${C.data.tf_fast}m + ${C.data.tf_slow}m, forming bar dropped</b><span>order book</span><b>top ${C.data.depth_levels} levels each side</b><span>24h change</span><b>${f(P.change24_pct)}%</b></div>`)}
+ ${step('ind',2,'Indicator readings','RSI15 '+f(M.rsi15,1)+' · ATR '+f(M.atr15_pct,3)+'%',`<div class="pv-kv"><span>EMA${I.ema_fast} 1h / EMA${I.ema_slow} 1h</span><b>${f(M.ema20h,4)} / ${f(M.ema50h,4)}</b><span>RSI(${I.rsi_len}) 15m</span><b class="${chase?'pv-no':''}">${f(M.rsi15,1)}${chase?' ⚠ chasing zone':''}</b><span>ROC ${I.roc_bars_slow}h</span><b>${f(M.roc6h_pct)}%</b><span>ATR(${I.atr_len}) 15m</span><b>${f(M.atr15_pct,3)}% of price</b><span>volume vs ${I.vol_avg_bars}-bar avg</span><b>${f(M.vol_ratio)}×</b><span>book imbalance</span><b>${f(M.book_imb,3)} (${M.book_imb>0?'buyers':'sellers'} heavier)</b><span>spread</span><b>${f(M.spread_bps)} bps</b></div>`)}
+ ${step('norm',3,'Normalise → trend & momentum','trend '+f(M.trend,3)+' · momentum '+f(M.momentum,3)+' → '+esc(P.direction),`<div class="pv-kv"><span>trend = gap ÷ ${N.trend_gap_full*100}%</span><b>${f(M.trend,3)}</b><span>RSI part (RSI−${N.rsi_mid})÷${N.rsi_span}</span><b>${f(rsiN,3)} × ${N.mom_w_rsi}</b><span>ROC part ROC÷${N.roc_full*100}%</span><b>${f(rocN,3)} × ${N.mom_w_roc}</b><span>momentum</span><b>${f(M.momentum,3)}</b><span>direction</span><b>${P.direction==='none'?'none (trend and momentum disagree)':esc(P.direction)+' (both point the same way)'}</b></div>`)}
+ ${step('lay',4,'Six safety checks',Object.values(Ly).filter(Boolean).length+' / 6 pass',`<div class="pv-kv"><span>bias: |trend| &gt; ${L.bias_min}</span>${ok(Ly.bias)}<span>momentum &gt; ${L.mom_min}, RSI inside ${L.rsi_short_min}–${L.rsi_long_max}</span>${ok(Ly.momentum)}<span>location vs EMA${I.ema_loc}</span>${ok(Ly.location)}<span>flow: imb &gt; ${L.flow_imb_min}, vol ≥ ${L.vol_ratio_min}×</span>${ok(Ly.flow)}<span>volatility ${L.atr_pct_min}–${L.atr_pct_max}% ATR</span>${ok(Ly.volatility)}<span>spread ≤ ${L.spread_bps_max} bps</span>${ok(Ly.spread)}</div><div class="small dim">Note: the engine allows RSI up to ${L.rsi_long_max} / down to ${L.rsi_short_min}, so its own check does not stop the 65/35 chasing zone flagged above.</div>`)}
+ ${step('w',5,'Weights × readings','Σ ≈ '+f(raw*100,1)+' pts',`<div class="pv-wt">${parts.map(([k,n,w,v])=>`<div class="pv-wr" title="${esc(n)}: weight ${w} × reading ${f(v,3)} = ${f(w*v*100,1)} pts"><span>${esc(n)}</span><span class="pv-wb"><i class="pv-wmax" style="width:${w*100/0.3*100/100}%"></i><i class="pv-wv" style="width:${w*v*100/0.3}%"></i></span><b>${f(w*v*100,1)}<span class="dim">/${f(w*100,0)}</span></b></div>`).join('')}</div>`)}
+ ${step('score',6,'Score','engine '+f(P.score,1)+(fac!==1?' (×'+fac+' no direction)':''),`<div class="pv-kv"><span>Σ weighted × 100</span><b>${f(raw*100,1)}</b><span>no-direction factor</span><b>×${fac}</b><span>rebuilt from rounded readings</span><b>${f(est,1)}</b><span>engine's own score</span><b>${f(P.score,1)}</b></div><div class="small dim">The engine's number is the one that counts; small gaps come from rounding in the published readings.</div>`)}
+ ${step('dec',7,'Decision',esc(P.verdict),`<div class="pv-kv"><span>TAKE needs</span><b>a direction, score ≥ ${V.take_min}${V.take_requires_all_layers?' and all 6 checks':''}</b><span>WATCH</span><b>score ≥ ${V.watch_min}</b><span>result</span><b class="${vc}">${esc(P.verdict)}</b>${P.direction!=='none'?`<span>engine stop / target 1</span><b>${f(P.stop,6)} / ${f(P.t1,6)}</b>`:''}</div>`)}
+ </div>`;}
