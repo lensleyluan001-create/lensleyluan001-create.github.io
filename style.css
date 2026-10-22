@@ -288,8 +288,3 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 .pv-nc{display:flex;gap:12px;align-items:center;padding:12px;border:1px dashed rgba(255,159,26,.5);border-radius:10px;margin-top:6px}.pv-nc-i{font-size:28px;color:#ff9f1a}
 @media (max-width:640px){.pv-gl span:nth-child(3){top:-27px}.pv-head{grid-template-columns:1fr}.pv-tools{margin-left:0}.pv-sum{max-width:48%}.pv-body{margin-left:6px}.pv-kv{grid-template-columns:1fr}.pv-kv span{margin-top:4px}.pv-wr{grid-template-columns:1fr 54px}.pv-wr .pv-wb{grid-column:1/-1;order:3}}
 .rc-role{color:#3ad7ff;border-color:#3ad7ff}.rc-role.ctl{color:#ffd23f;border-color:#ffd23f}
-
-/* Idea Lab (2026-10-22) */
-.lb-i summary{cursor:pointer;list-style:none}.lb-i{margin:10px 0}.lb-t{overflow-x:auto;margin-top:8px}.lb-t table{border-collapse:collapse;width:100%}.lb-t th,.lb-t td{border-bottom:1px solid var(--ln);padding:3px 6px;text-align:left;white-space:nowrap}
-.lb-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.lb-f{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0;align-items:center}.lb-f input,.lb-f select,.lb-blk input,.lb-blk select{background:#08130e;border:1px solid var(--ln);color:var(--t);font:inherit;padding:3px 5px;border-radius:3px}
-.lb-b{background:#08130e;border:1px solid var(--g);color:var(--g);font:inherit;font-size:11px;padding:4px 9px;border-radius:3px;cursor:pointer}.lb-blk{border:1px dashed var(--ln);padding:6px;margin:4px 0;border-radius:6px}.lb-o{background:#050d09;border:1px solid var(--ln);padding:8px;max-height:260px;overflow:auto;font-size:11px;white-space:pre-wrap}
