@@ -1,0 +1,52 @@
+/* RESKIN 2026-10-22 (staging): shadcn-style tokens, Inter, sidebar shell. Visual layer only, loaded last.
+   Layout ideas: satnaing/shadcn-admin (MIT) and shadcn-ui/ui (MIT). Ideas only, no code copied.
+   Font: Inter by Rasmus Andersson, SIL OFL 1.1, self-hosted (vendor/fonts/INTER-OFL-LICENSE.txt). */
+@font-face{font-family:"Inter";src:url(/vendor/fonts/InterVariable.woff2) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+:root{--background:#09090b;--card:#0f0f12;--card-2:#131317;--border:#27272a;--muted:#a1a1aa;--fg:#fafafa;--accent:#22c55e;--accent-fg:#052e16;--ring:#3f3f46;--danger:#ef4444;--warn:#f59e0b;--info:#38bdf8;
+ --bg:var(--background);--p1:var(--card);--p2:var(--card);--ln:var(--border);--t:var(--fg);--d:var(--muted);--g:var(--accent);--r:var(--danger);--a:var(--warn);--c:var(--info);
+ --sans:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+ --radius:10px;--r1:8px;--r2:var(--radius);--sbw:220px;--sh:0 1px 2px rgba(0,0,0,.4)}
+html,body{font-family:var(--sans)!important;font-feature-settings:"cv11","ss01";letter-spacing:0}
+body{background:var(--background)!important}
+.scan{display:none!important}
+/* everything sans; mono only for numbers and code */
+body *{text-shadow:none!important}
+:where(button,input,select,textarea,label,summary,.ph b,h1,h2,h3,h4,.logo,.badge,.ban,.small,.dim,td,th,li,p,span,div,a){font-family:var(--sans)}
+:where(.num,.px,.bign,.kpi .v,.tape,.tw,#clock,#age,code,pre,kbd,.ob,.mono,td.n,.rc-t td:nth-child(n+3),.pv-kv b,.pv-sum,.pv-sc b,.pv-wr b),.tape *,pre *{font-family:var(--mono)!important;font-variant-numeric:tabular-nums}
+.ph b,h2,h3,h4,.ban{letter-spacing:.01em!important;font-weight:600}
+.card,.panel{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:var(--radius)!important;box-shadow:var(--sh)!important}
+.card.take{box-shadow:0 0 0 1px rgba(34,197,94,.55),var(--sh)!important}
+.top{background:rgba(9,9,11,.82)!important;border-bottom:1px solid var(--border)!important}
+.logo{letter-spacing:.08em!important;font-weight:650}
+button,.ibtn,.seg button{border-radius:var(--r1)}
+.badge.live{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}
+a{color:var(--info)}
+/* ---- sidebar shell (desktop) ---- */
+.tabsbar a .rs-ic{display:inline-grid;place-items:center;width:18px;font-size:13px;opacity:.8}
+@media (min-width:1100px){
+ body>*:not(.tabsbar):not(#rsCollapse):not(#nlPal):not(#nlLogin):not(#nlIntro):not(#nlFb):not(script):not(#toasts):not(#tip):not(dialog):not(.top):not(#down):not(#demo){margin-left:var(--sbw)!important;max-width:calc(100% - var(--sbw));transition:margin-left .2s}
+ html,body{overflow-x:hidden}
+ .strip{overflow-x:auto;box-sizing:border-box}
+ .tabsbar{position:fixed!important;left:0;top:0;bottom:0;width:var(--sbw);flex-direction:column;gap:2px!important;padding:64px 10px 12px!important;overflow-y:auto;overflow-x:hidden;background:var(--card)!important;border-right:1px solid var(--border);border-bottom:0!important;z-index:45!important;backdrop-filter:none!important;transition:width .2s}
+ .tabsbar::before{content:"NAVIGATION";position:absolute;top:40px;left:20px;font-size:10.5px;letter-spacing:.08em;color:var(--muted);font-weight:500}
+ .tabsbar a{display:flex!important;align-items:center;gap:10px;width:100%;padding:8px 10px!important;font-size:13.5px!important;color:var(--muted)!important;border:0!important;border-radius:var(--r1)!important}
+ .tabsbar a:hover{background:var(--card-2)!important;color:var(--fg)!important}
+ .tabsbar a.on{background:#18181b!important;color:var(--fg)!important;box-shadow:inset 2px 0 0 var(--accent)!important}
+ .tabsbar a .kb{margin-left:auto!important}
+ #rsCollapse{position:fixed;left:calc(var(--sbw) - 34px);top:12px;z-index:46;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--card-2);color:var(--muted);cursor:pointer;font:13px var(--sans);transition:left .2s}
+ body.rs-col{--sbw:60px}
+ body.rs-col .tabsbar a{justify-content:center;padding:9px 0!important}body.rs-col .tabsbar a .rs-lb,body.rs-col .tabsbar a .kb,body.rs-col .tabsbar::before{display:none}
+ body.rs-col #rsCollapse{left:17px;top:40px}
+ .top{position:sticky;z-index:50!important}#down,#demo{position:relative;z-index:50}
+ .tabsbar{padding-top:84px!important}.tabsbar::before{top:62px}#rsCollapse{top:auto;bottom:14px;left:calc(var(--sbw) - 38px)}body.rs-col #rsCollapse{left:17px;top:auto}
+}
+@media (max-width:1099px){#rsCollapse{display:none}.tabsbar{background:rgba(9,9,11,.92)!important}.tabsbar a.on{background:#18181b!important;border-color:var(--border)!important}}
+/* ---- command palette (shadcn cmdk look) ---- */
+#nlPal{background:rgba(0,0,0,.55)!important}
+#nlPal .box{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:12px!important}
+#nlPal input{font:15px var(--sans)!important;padding:14px 16px!important}
+#nlPal li{font-size:13.5px!important;border-radius:6px!important}#nlPal li.sel{background:#18181b!important;color:var(--fg)}
+.palbtn{border:1px solid var(--border)!important;background:var(--card-2)!important;min-width:64px}
+/* number ticker (idea: magicui NumberTicker, MIT; own implementation in reskin.js) */
+.rs-tick{transition:color .4s}.rs-up{color:var(--accent)!important}.rs-dn{color:var(--danger)!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
