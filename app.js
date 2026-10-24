@@ -33,7 +33,7 @@ function strip(d){const P=d.pulse.pairs,s=d.state,thr=s?.bot?.pulse_min??d.pulse
  const open=s?.challenge?.open_positions||[];const ps=ORD.map(p=>P[p]).filter(Boolean);
  const best=ps.slice().sort((a,b)=>Object.values(b.layers).filter(Boolean).length-Object.values(a.layers).filter(Boolean).length||b.score-a.score)[0];
  const takes=ps.filter(u=>u.verdict==='TAKE'&&u.direction==='long'&&u.score>=thr);
- let st,why;if(open.length){st=`🟢 IN ${open.length} PAPER TRADE${open.length>1?'S':''}`;why=open.map(o=>`${NAME[o.pair]||o.pair} ${o.side==='short'?'shorted (SIMULATED)':'bought'} ${o.tier==='probation'?'[$10 probation] ':''}${fmt(o.entry,dp(o.entry))}, stop ${fmt(o.sl,dp(o.sl))}, target ${fmt(o.tp,dp(o.tp))}`).join(' · ');}
+ let st,why;if(open.length){st=window.NL_HB?.scoreboard?.bots?.v5?.status==='RETIRED'?`⏹ v5 RETIRED · closing ${open.length} paper trade${open.length>1?'s':''}`:`🟢 IN ${open.length} PAPER TRADE${open.length>1?'S':''}`;why=open.map(o=>`${NAME[o.pair]||o.pair} ${o.side==='short'?'shorted (SIMULATED)':'bought'} ${o.tier==='probation'?'[$10 probation] ':''}${fmt(o.entry,dp(o.entry))}, stop ${fmt(o.sl,dp(o.sl))}, target ${fmt(o.tp,dp(o.tp))}`).join(' · ');}
  else if(takes.length){st='⚡ BUY SIGNAL';why=`${takes.map(u=>NAME[u.pair]).join(', ')} passes every check. The bot will buy on its next 30-minute tick.`;}
  else{st='⏸ WAITING · FLAT';why=`No coin passes all 6 checks right now, so the ${M(s?.challenge?.equity_usd??s?.challenge?.start_capital??1000)} paper account sits in cash. Waiting is a position.`;}
  const fail=best?Object.entries(best.layers).filter(([,v])=>!v).map(([k])=>CHECK[k][0].toLowerCase()):[];
@@ -74,7 +74,7 @@ function ecgLoop(){const cv=[...document.querySelectorAll('canvas.ecg')];const P
   for(let i=0;i<=w;i+=2){const tt=t-(w-i)/w*4,ph=((tt%per)+per)%per/per;let y=0;
    if(ph<.06)y=Math.sin(ph/.06*Math.PI)*.12;else if(ph>.1&&ph<.13)y=-(ph-.1)/.03*.2;else if(ph>=.13&&ph<.17)y=-.2+(ph-.13)/.04*1.2;else if(ph>=.17&&ph<.21)y=1-(ph-.17)/.04*1.35;else if(ph>=.21&&ph<.25)y=-.35+(ph-.21)/.04*.35;else if(ph>.35&&ph<.5)y=Math.sin((ph-.35)/.15*Math.PI)*.25;
    if(u.verdict==='STAND_ASIDE')y*=.8;const Y=h/2-y*amp*h*.45;i?x.lineTo(i,Y):x.moveTo(i,Y);}x.stroke();}
- if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&S.tab==='engine')ecgRAF=requestAnimationFrame(ecgLoop);}
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&S.on('engine'))ecgRAF=requestAnimationFrame(ecgLoop);}
 function renderEngine(){const P=S.d.pulse.pairs;$('#engSel').innerHTML=[...ORD,'ALL'].map(p=>`<button data-e="${p}" class="${S.eng===p?'on':''}">${p==='ALL'?'All 3 engines':NAME[p]}</button>`).join('');
  const k=S.eng==='ALL'?ORD.map(p=>[P[p].score,P[p].verdict,P[p].layers,P[p].metrics]):[P[S.eng].score,P[S.eng].verdict,P[S.eng].layers,P[S.eng].metrics,P[S.eng].last];
  if(once('eng'+S.eng,k)){$('#engWrap').innerHTML=`<div class="engines ${S.eng==='ALL'?'three':''}">${(S.eng==='ALL'?ORD:[S.eng]).map(p=>engineCard(P[p],S.eng!=='ALL')).join('')}</div>`;}
@@ -140,7 +140,7 @@ const CNAME={GOLD:'Gold (XAU)',SILVER:'Silver (XAG)'},TFN={5:'5m',15:'15m',60:'1
 const coinOf=m=>{let s=String(m||'').toUpperCase().replace(/^(PF_|PI_|Y:)/,'').replace(/[-_/ ]/g,'').replace(/(USDT|USDC|ZUSD|USD)$/,'');if(s==='XBT'||s==='XXBT')return'BTC';if(s==='XDG'||s==='XXDG')return'DOGE';if(s==='XAU'||s==='GOLD')return'GOLD';if(s==='XAG'||s==='SILVER')return'SILVER';return s;};
 S.cm=S.cm||'BTC';S.mkOff=S.mkOff||new Set();let SQM=null,SQB=null,cxBuilt=false;const OC=new Map();
 const isMain=()=>ORD.includes(KR[S.cm])&&(S.tf===15||S.tf===60);
-function sqLoad(){if(SQM)return;import('/squad.js').then(async m=>{SQM=m;const q=await m.loadSquad();SQB=q&&Array.isArray(q.bots)?q.bots:[];cxWho();if(S.tab==='charts')charts(false);}).catch(()=>{SQB=[];});}
+function sqLoad(){if(SQM)return;import('/squad.js').then(async m=>{SQM=m;const q=await m.loadSquad();SQB=q&&Array.isArray(q.bots)?q.bots:[];cxWho();if(S.on('charts'))charts(false);}).catch(()=>{SQB=[];});}
 function cxUI(){sqLoad();if(cxBuilt)return;cxBuilt=true;const pt=$('#pairTabs');pt.classList.add('cx-pick');
  pt.innerHTML=`<input id="cxQ" class="cx-q" type="search" placeholder="search market…" aria-label="Search markets">`+CX.map(([g,n,L])=>`<div class="cx-g" data-g="${g}"><span class="dim small">${n}</span>${L.map(c=>`<button data-c="${c}" class="${c===S.cm?'on':''}">${esc(CNAME[c]||c)}</button>`).join('')}</div>`).join('');
  pt.onclick=e=>{const c=e.target.closest('button')?.dataset.c;if(!c)return;S.cm=c;pt.querySelectorAll('button[data-c]').forEach(b=>b.classList.toggle('on',b.dataset.c===c));cxWho();charts(true);};
@@ -182,7 +182,7 @@ let OSP;function loadOS(){return OSP??=import('/os.js').then(m=>(window.OS=m,m))
 function demo(d){if(!DEMO)return d;const m={take:['TAKE',82,'long',true],watch:['WATCH',61,'long',null],aside:['STAND_ASIDE',18,'none',false]}[DEMO];if(!m)return d;
  $('#demo').classList.remove('hidden');$('#demo').textContent=`DEMO MODE (${DEMO.toUpperCase()}) · SIMULATED ENGINE STATE · NOT REAL DATA`;
  for(const u of Object.values(d.pulse.pairs)){u.verdict=m[0];u.score=m[1]+(u.pair==='ETHUSD'?-3:u.pair==='SOLUSD'?2:0);u.direction=m[2];const ks=Object.keys(u.layers);ks.forEach((k,i)=>u.layers[k]=m[3]===null?i<5:m[3]?true:i%2===0);}return d;}
-async function tick(){if(document.hidden)return;try{const r=await fetch('/api/all'+(S.tab==='markets'&&Date.now()-S.idxAt>60000?'?idx=1':''),{cache:'no-store'});const d=demo(await r.json());if(d.indices){S.idxAt=Date.now();renderIdx(d.indices);}
+async function tick(){if(document.hidden)return;try{const r=await fetch('/api/all'+(S.on('markets')&&Date.now()-S.idxAt>60000?'?idx=1':''),{cache:'no-store'});const d=demo(await r.json());if(d.indices){S.idxAt=Date.now();renderIdx(d.indices);}
  if(d.pulse.error)throw new Error(d.pulse.error);S.d=d;S.lastOk=d.pulse.fetched_at*1000;render();}catch(e){if(!S.d)$('#strip').innerHTML=`<div class="st">⚠ FEED ERROR</div><div class="why">${esc(e.message)}. No numbers are shown rather than fake ones.</div>`;}}
 // last tick age: heartbeat row (bot_state id=heartbeat, owner-only; read at most every 5 min inside the existing tick) else the published state age
 let HBx=null,ALx=null,HBat=0;function hbLoad(){if(Date.now()-HBat<300000)return;HBat=Date.now();try{window.NL_UPD&&window.NL_UPD()}catch{}try{const s=window.NL_SB,a=JSON.parse(localStorage.getItem('nl_auth')||'null'),t=a&&a.mode==='supabase'&&a.exp>Date.now()/1000+30?a.token:null;if(!s||!t)return;
@@ -191,28 +191,40 @@ function tickAge(h){hbLoad();const now=Date.now()/1000,hb=HBx&&HBx.epoch?now-HBx
 function render(){const d=S.d,P=d.pulse.pairs;const h=d.health;const tAge=tickAge(h),isDown=tAge!=null&&tAge>75*60;$('#down').classList.toggle('hidden',!isDown);   // no data (signed out) = no banner, never 'BOT DOWN'
  if(isDown)$('#down').textContent=`⚠ BOT DOWN · no bot tick for ${Math.round(tAge/60)} min (limit 75). Prices are still live; the bot panel is stale.`;
  $('#eng').textContent=`engine ${d.pulse.engine_version} #${d.pulse.engine_hash}`;strip(d);detect(d);
- if(S.tab==='overview')window.rsKpis?.(d); if(S.tab==='overview'&&once('cards',ORD.map(p=>[P[p].last,P[p].score,P[p].verdict,P[p].layers]))){$('#cards').innerHTML=ORD.map(p=>card(P[p])).join('');}
- if(S.tab==='overview'&&$('#raw').closest('details').open)$('#raw').innerHTML=`<table><tr><th>COIN</th><th>RSI15</th><th>ROC6h</th><th>ATR15</th><th>VOL×</th><th>BOOK</th><th>SPREAD</th><th>TREND</th><th>MOM</th><th>STOP</th><th>T1</th></tr>${ORD.map(p=>{const u=P[p],m=u.metrics;return `<tr><td>${NAME[p]}</td><td>${m.rsi15}</td><td>${m.roc6h_pct}%</td><td>${m.atr15_pct}%</td><td>${m.vol_ratio}</td><td>${m.book_imb}</td><td>${m.spread_bps}bp</td><td>${m.trend}</td><td>${m.momentum}</td><td>${fmt(u.stop,dp(u.stop))}</td><td>${fmt(u.t1,dp(u.t1))}</td></tr>`}).join('')}</table>`;
- if(S.tab==='engine')renderEngine();if(window.OS)OS.update(S.tab);if(S.tab==='bot')renderBot(d);
+ if(S.on('overview'))window.rsKpis?.(d); if(S.on('overview')&&once('cards',ORD.map(p=>[P[p].last,P[p].score,P[p].verdict,P[p].layers]))){$('#cards').innerHTML=ORD.map(p=>card(P[p])).join('');}
+ if(S.on('settings')&&$('#raw').closest('details').open)$('#raw').innerHTML=`<table><tr><th>COIN</th><th>RSI15</th><th>ROC6h</th><th>ATR15</th><th>VOL×</th><th>BOOK</th><th>SPREAD</th><th>TREND</th><th>MOM</th><th>STOP</th><th>T1</th></tr>${ORD.map(p=>{const u=P[p],m=u.metrics;return `<tr><td>${NAME[p]}</td><td>${m.rsi15}</td><td>${m.roc6h_pct}%</td><td>${m.atr15_pct}%</td><td>${m.vol_ratio}</td><td>${m.book_imb}</td><td>${m.spread_bps}bp</td><td>${m.trend}</td><td>${m.momentum}</td><td>${fmt(u.stop,dp(u.stop))}</td><td>${fmt(u.t1,dp(u.t1))}</td></tr>`}).join('')}</table>`;
+ if(S.on('engine'))renderEngine();if(window.OS)(S.subs||[]).forEach(x=>OS.update(x));if(S.on('bot'))renderBot(d);
  const tape=ORD.map(p=>{const u=P[p];return `<span>${NAME[p]} <b class="${u.change24_pct>=0?'up':'dn'}">${fmt(u.last,dp(u.last))} ${u.change24_pct>=0?'+':''}${fmt(u.change24_pct)}%</b> · pulse ${u.score.toFixed(1)} ${u.verdict.replace('_',' ')}</span>`}).join('');
  if(once('tape',tape))$('#tape').innerHTML=tape+tape;}
 function clock(){$('#clock').textContent=new Date(Date.now()+SAST*1000).toISOString().slice(11,19)+' SAST';const a=S.lastOk?Math.round((Date.now()-S.lastOk)/1000):null,b=$('#badge'),st=a==null||a>300?'off':a>60?'stale':'live';
  b.className='badge '+st;b.textContent=st==='live'?'● LIVE · Kraken':st==='stale'?'● STALE':'● OFFLINE';$('#age').textContent=a==null?'':`${a}s old`;}
-function go(t){S.tab=t;document.querySelectorAll('#tabs a').forEach(a=>{const on=a.dataset.t===t;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('hidden',s.id!=='t-'+t));
- history.replaceState(null,'',(t==='overview'?'/':'/'+t)+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};if(t==='charts')charts(true);if(['markets','proof','engine'].includes(t))loadOS().then(m=>m.show(t));if(t==='brain')import('/brain.js').then(m=>m.show());if(t==='bot')import('/squad.js').then(m=>m.showBots());if(t==='rnd')import('/rnd.js').then(m=>m.show());if(t==='office')import('/office.js').then(m=>m.show());if(t==='lab')import('/lab.js').then(m=>m.show());if(t==='research')import('/research.js').then(m=>m.show());if(t==='markets')S.idxAt=0;if(S.d){render();if(t==='markets')tick();}}
+// DECLUTTER (staging 2026-10-24): 5 top-level tabs, each a group of the old sections (renderers unchanged). Old routes redirect.
+const GROUPS={money:['overview','proof'],machines:['bot'],research:['research','lab','rnd'],markets:['charts','markets','engine'],settings:['settings']};
+const ALIAS={overview:'money',proof:'money',bot:'machines',office:'machines',rnd:'research',lab:'research',brain:'research',charts:'markets',engine:'markets'};
+S.on=x=>(S.subs||[]).includes(x);S.floor=false;S.brainOn=false;
+function go(t){if(t==='office')S.floor=true;if(t==='brain')S.brainOn=true;const g=GROUPS[t]?t:(ALIAS[t]||'money');S.tab=g;
+ S.subs=GROUPS[g].slice();if(g==='machines'&&S.floor)S.subs.push('office');if(g==='research'&&S.brainOn)S.subs.push('brain');
+ document.querySelectorAll('#tabs a').forEach(a=>{const on=a.dataset.t===g;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+ document.querySelectorAll('main>.tab').forEach(s=>{const k=s.id.slice(2),i=S.subs.indexOf(k);s.classList.toggle('hidden',i<0&&!(k==='toggles'&&(g==='machines'||g==='research')));s.style.order=k==='toggles'?50:i;});
+ toggles(g);history.replaceState(null,'',(g==='money'?'/':'/'+g)+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};
+ const on=S.on;if(on('charts'))charts(true);['markets','proof','engine'].filter(on).forEach(x=>loadOS().then(m=>m.show(x)));if(on('brain'))import('/brain.js').then(m=>m.show());if(on('bot'))import('/squad.js').then(m=>m.showBots());if(on('rnd'))import('/rnd.js').then(m=>m.show());if(on('office'))import('/office.js').then(m=>m.show());if(on('lab'))import('/lab.js').then(m=>m.show());if(on('research'))import('/research.js').then(m=>m.show());if(on('markets'))S.idxAt=0;if(on('settings'))settingsMove();if(S.d){render();if(on('markets'))tick();}}
+function toggles(g){const el=$('#t-toggles');if(g==='machines')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgFloor">${S.floor?'Hide':'Show'} 3D floor view (heavier)</button> <span class="dim small">same bots as the board above, drawn as an office</span></div>`;
+ else if(g==='research')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgBrain">${S.brainOn?'Hide':'Show'} brain map &amp; lessons (heavier)</button> <span class="dim small">verdicts, lessons and the neural log</span></div>`;else el.innerHTML='';
+ const f=$('#tgFloor'),b=$('#tgBrain');if(f)f.onclick=()=>{S.floor=!S.floor;go('machines');};if(b)b.onclick=()=>{S.brainOn=!S.brainOn;go('research');};}
+function settingsMove(){const c=$('#setCtl');if(c&&!c.dataset.m){c.dataset.m=1;['snd','notify'].forEach(id=>{const e=document.getElementById(id);if(e)c.append(e);});const d=$('#raw')?.closest('details');if(d){$('#setRaw').append(d);d.open=true;}}}
 $('#tabs').onclick=e=>{const a=e.target.closest('a[data-t]');if(!a)return;e.preventDefault();go(a.dataset.t);};
 $('#help').onclick=()=>$('#guide').showModal();$('#gclose').onclick=()=>{$('#guide').close();localStorage.setItem('nl_seen','1');};
 $('#snd').onclick=()=>{S.sound=!S.sound;$('#snd').textContent=S.sound?'🔊 Sound on':'🔇 Sound off';beep(520);};
 $('#notify').onclick=async()=>{if(!('Notification'in window))return toast('Notifications not supported here. In-page alerts stay on.');S.notify=(await Notification.requestPermission())==='granted';toast(S.notify?'🔔 Alerts on (paper signals only)':'Notifications blocked. In-page alerts stay on.');};
 function toast(t){const e=document.createElement('div');e.className='toast';e.innerHTML=t;$('#toasts').appendChild(e);setTimeout(()=>e.remove(),8000);}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
-window.S=S;window.go=go;const start=location.pathname.replace(/\//g,'')||'overview';go(['overview','engine','charts','bot','markets','proof','brain','rnd','office','lab','research'].includes(start)?start:'overview');
+window.S=S;window.go=go;const start=location.pathname.replace(/\//g,'')||'overview';settingsMove();go(start);
 // shared in-app links: <a data-go=tab data-sec=id> (Office card and squad have their own handlers)
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[data-go]');if(!a||a.closest('#ofCard,#botSquad'))return;e.preventDefault();go(a.dataset.go);const sec=a.dataset.sec;if(sec){let k=0;const iv=setInterval(()=>{const el=document.getElementById(sec);if(el&&el.offsetHeight){if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({block:'start',behavior:'smooth'});el.focus?.({preventScroll:true});clearInterval(iv);}else if(++k>40)clearInterval(iv);},100);}});
 if(!localStorage.getItem('nl_seen')&&!Q.has('noguide')&&!DEMO)setTimeout(()=>$('#guide').showModal(),1200);
-clock();setInterval(clock,1000);tick();setInterval(tick,30000);setInterval(()=>{if(S.tab==='charts'&&!document.hidden&&isMain())charts(false);},20000);
+clock();setInterval(clock,1000);tick();setInterval(tick,30000);setInterval(()=>{if(S.on('charts')&&!document.hidden&&isMain())charts(false);},20000);
 if(Q.get('events')){let i=0;const ev=[['XBTUSD','🟢','DEMO: bot opened paper BTC'],['XBTUSD','🏆','DEMO: take-profit on BTC'],['ETHUSD','🟥','DEMO: stop-loss on ETH'],['SOLUSD','💨','DEMO: bot closed SOL (trend_flip)']];setInterval(()=>{if(S.d){const e=ev[i++%ev.length];event(...e);}},2500);}
 // currency toggle (USD / ZAR via Frankfurter ECB daily rate)
 fetch('/api/lab?key=summary').then(r=>r.ok?r.json():null).then(j=>{if(j?.usdzar?.rates?.ZAR){ZAR=j.usdzar.rates.ZAR;window.ZAR_DATE=j.usdzar.date;}curBtn();});
 function curBtn(){$('#cur').textContent=CUR==='ZAR'?(ZAR?'ZAR R':'ZAR (no rate)'):'USD $';$('#cur').title=ZAR?`USD/ZAR ${ZAR} (ECB via Frankfurter, ${window.ZAR_DATE})`:'ZAR rate unavailable';}
-$('#cur').onclick=()=>{CUR=CUR==='USD'?'ZAR':'USD';localStorage.setItem('nl_cur',CUR);curBtn();S.keys={};if(S.d)render();if(window.OS)OS.update(S.tab,true);};
+$('#cur').onclick=()=>{CUR=CUR==='USD'?'ZAR':'USD';localStorage.setItem('nl_cur',CUR);curBtn();S.keys={};if(S.d)render();if(window.OS)(S.subs||[]).forEach(x=>OS.update(x,true));};

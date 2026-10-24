@@ -1,12 +1,12 @@
 // RESKIN 2026-10-22 (staging): sidebar collapse + number ticker. Display only, no data/engine logic.
 // Sidebar idea: satnaing/shadcn-admin (MIT). Number ticker idea: magicuidesign/magicui NumberTicker (MIT). Own code, no copy.
-(()=>{const IC={overview:'◱',engine:'◎',charts:'▤',markets:'◈',bot:'◉',proof:'✓',brain:'✦',rnd:'⚗',office:'▦',lab:'✎'};
+(()=>{const IC={money:'◱',machines:'◉',research:'⚗',settings:'⚙',overview:'◱',engine:'◎',charts:'▤',markets:'◈',bot:'◉',proof:'✓',brain:'✦',rnd:'⚗',office:'▦',lab:'✎'};
 const nav=document.getElementById('tabs');
 function deco(){if(!nav)return;for(const a of nav.querySelectorAll('a[data-t]')){if(a.querySelector('.rs-lb'))continue;const kb=a.querySelector('.kb');
  const txt=[...a.childNodes].filter(n=>n!==kb).map(n=>n.textContent).join('').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu,'').trim();
  [...a.childNodes].forEach(n=>{if(n!==kb)n.remove();});const ic=document.createElement('span');ic.className='rs-ic';ic.textContent=IC[a.dataset.t]||'•';const lb=document.createElement('span');lb.className='rs-lb';lb.textContent=txt;a.prepend(ic,lb);a.title=txt;}}
 // DESIGN PASS B: Engine moves under an ADVANCED group at the end of the nav (section, route /engine and key 2 unchanged)
-function adv(){if(!nav)return;const e=nav.querySelector('a[data-t="engine"]');if(!e)return;let g=nav.querySelector('.rs-grp');
+function adv(){if(!nav)return;const e=nav.querySelector('a[data-t="settings"]');if(!e)return;let g=nav.querySelector('.rs-grp');
  if(!g){g=document.createElement('span');g.className='rs-grp';g.setAttribute('role','presentation');g.textContent='Advanced';}
  if(nav.lastElementChild!==e||e.previousElementSibling!==g){nav.append(g,e);}}
 const navTick=()=>{deco();adv();};navTick();if(nav)new MutationObserver(navTick).observe(nav,{childList:true,subtree:true});

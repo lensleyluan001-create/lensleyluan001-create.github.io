@@ -12,7 +12,7 @@ let guideWait=false;const lock=on=>{document.body.classList.toggle('locked',on);
 /* ---------- sticky offsets + nav hints ---------- */
 function layout(){const t=$('.top'),n=$('#tabs');if(t&&n)n.style.top=t.offsetHeight+'px';}
 addEventListener('resize',layout);
-const TABS=[['overview','Overview','1'],['engine','Engine','2'],['charts','Charts','3'],['markets','Markets','4'],['bot','Bot','5'],['proof','Proof','6'],['brain','Brain','7'],['rnd','R&D','8'],['office','Office','9']];
+const TABS=[['money','Money','1'],['machines','Machines','2'],['research','Research Lab','3'],['markets','Markets','4'],['settings','Settings','5']];
 function hints(){document.querySelectorAll('#tabs a').forEach(a=>{const t=TABS.find(x=>x[0]===a.dataset.t);if(t&&!a.querySelector('.kb'))a.append(h('span',{class:'kb'},t[2]));});
  const hd=$('.hdr');if(hd&&!$('#palOpen')){const b=h('button',{id:'palOpen',class:'ibtn wide palbtn',title:'Command palette'},'⌘K');b.onclick=pal;hd.prepend(b);}}
 

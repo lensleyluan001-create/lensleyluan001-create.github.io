@@ -9,7 +9,7 @@
  <div class="hdr"><span id="badge" class="badge off">● CONNECTING</span><span id="age" class="dim">—</span><span class="paper-tag">PAPER · NO LIVE MONEY</span><span id="clock" class="dim">--:--:-- SAST</span>
  <button id="cur" class="ibtn wide" aria-label="Display currency">USD</button><button id="help" class="ibtn" aria-label="Guide">?</button></div>
 </header>
-<nav class="tabsbar" id="tabs" aria-label="Main sections"><a data-t="overview" href="/">Overview</a><a data-t="engine" href="/engine">Engine</a><a data-t="charts" href="/charts">Charts</a><a data-t="markets" href="/markets">Markets</a><a data-t="bot" href="/bot">Bot</a><a data-t="proof" href="/proof">Proof</a><a data-t="brain" href="/brain">🧠 Brain</a><a data-t="rnd" href="/rnd">🧪 R&amp;D</a><a data-t="office" href="/office">🏢 Office</a><a data-t="lab" href="/lab">⚗ Lab</a><a data-t="research" href="/research">🔬 Research</a></nav>
+<nav class="tabsbar" id="tabs" aria-label="Main sections"><a data-t="money" href="/">💰 Money</a><a data-t="machines" href="/machines">🤖 Machines</a><a data-t="research" href="/research">🔬 Research Lab</a><a data-t="markets" href="/markets">📈 Markets</a><a data-t="settings" href="/settings">⚙ Settings</a></nav>
 <section id="strip" class="strip"><div class="sk">Loading live market…</div></section>
 <main>
  <section id="t-overview" class="tab"><div id="cards" class="cards"></div>
@@ -31,6 +31,8 @@
  <section id="t-research" class="tab hidden"><div id="research"></div></section><section id="t-lab" class="tab hidden"><div id="idealab"></div></section>
  <section id="t-markets" class="tab hidden"><div id="lab"></div><div class="panel"><div class="ph"><b>INDICES &amp; GOLD</b><span class="delayed">DELAYED · NOT LIVE</span></div><div id="idx" class="idx"><div class="sk">Loading delayed quotes…</div></div>
   <p class="dim small">Reference only. The pulse engine only scores the three live Kraken coins.</p></div></section>
+<section id="t-settings" class="tab hidden"><div class="panel"><div class="ph"><b>SETTINGS</b><span class="dim small">engine view, sound, alerts, raw numbers · display only, paper only</span></div><div id="setCtl" class="row"></div></div><div id="setRaw"></div><div class="panel"><div class="ph"><b>UPDATES &amp; GUIDE</b></div><p class="small">Open the guide with <b>?</b> in the header. Updates arrive in the 🔔 bell.</p></div></section>
+<section id="t-toggles" class="tab hidden"></section>
 </main>
 <div class="tape"><div id="tape" class="tape-in"></div></div>
 <footer class="foot">Crypto: Kraken public data, scored by the same engine file the bot runs (<span id="eng">engine —</span>). Indices/gold delayed. PAPER ONLY. No broker, no orders, no live money. Not financial advice. <a href="/pulse/selftest/">Selftest</a> · <a href="/api/health">Health</a></footer>

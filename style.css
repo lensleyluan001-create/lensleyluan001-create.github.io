@@ -298,3 +298,7 @@ h4{margin:14px 0 6px;font-size:11px;letter-spacing:.15em}
 .lb-bar{height:6px;border-radius:3px;background:rgba(127,127,127,.2);overflow:hidden;margin:.35rem 0}
 .lb-bar span{display:block;height:100%;background:var(--accent,#3b82f6)}
 .badge.warn{background:rgba(234,179,8,.15);color:#eab308}
+/* DECLUTTER staging 2026-10-24: duplicates removed from view (renderers untouched) */
+#rnSq{display:none!important} /* R&D paper squad = Machines board */
+#engSel,#engWrap{display:none!important} /* per-coin engine card = Charts Pulse view in Markets */
+#t-settings #snd,#t-settings #notify{margin:4px}
