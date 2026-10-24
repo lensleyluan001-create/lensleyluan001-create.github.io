@@ -17,14 +17,18 @@
  <section id="t-engine" class="tab hidden">
   <div class="eng-top"><div class="seg" id="engSel"></div><button id="snd" class="ibtn wide">🔇 Sound off</button><button id="notify" class="ibtn wide">🔔 Alerts</button></div>
   <div id="engWrap"></div>
-  <div id="learn"></div><div class="panel"><div class="ph"><b>ENGINE EVENT FEED</b><span class="dim small">threshold crossings · verdict changes · bot paper trades</span></div><ol id="feed" class="feed"><li class="dim">Listening…</li></ol></div>
+  <div id="learn" style="display:none"></div><div class="panel"><div class="ph"><b>ENGINE EVENT FEED</b><span class="dim small">threshold crossings · verdict changes · bot paper trades</span></div><ol id="feed" class="feed"><li class="dim">Listening…</li></ol></div>
  </section>
  <section id="t-charts" class="tab hidden"><div class="panel"><div class="ph"><div class="seg" id="pairTabs"></div><div class="seg" id="tfTabs"><button data-tf="15" class="on">15m</button><button data-tf="60">1h</button></div><span class="dim small" id="chartInfo"></span></div>
   <div id="chart" class="chart"><div class="sk">Loading chart…</div></div><div class="legend"><span class="lg ema1">EMA20</span><span class="lg ema2">EMA50</span><span class="lg mk">▲▼ bot paper fills</span><span class="lg sl">- - engine stop / target</span></div></div>
   <div class="panel"><div class="ph"><b>ORDER BOOK</b><span class="dim small" id="depthInfo"></span></div><canvas id="depth" class="depth"></canvas><div class="ob" id="ob"></div></div>
   <div class="panel"><div class="ph"><b>PULSE HISTORY</b><span class="dim small">score over time · 70 = engine TAKE line</span></div><div id="hist" class="hist"></div></div></section>
  <section id="t-proof" class="tab hidden"><div id="proof"><div class="sk">Loading proof…</div></div></section>
- <section id="t-bot" class="tab hidden"><div id="bot"></div><div id="botSquad"></div></section>
+ <section id="t-bot" class="tab hidden"><div id="botSquad"></div></section>
+ <section id="t-guards" class="tab hidden"><div id="plGuards"></div></section>
+ <section id="t-retired" class="tab hidden"><details class="adv panel" id="retiredBox"><summary><b>RETIRED</b> <span class="dim small">v5 · S11 · S17 · no new entries, open trades close on their own rules, history kept</span></summary><div id="bot"></div><div id="plRetired"></div></details></section>
+ <section id="t-rebuild" class="tab hidden"><div id="plRebuild"></div></section>
+ <section id="t-mview" class="tab hidden"><div id="plMview"></div></section>
  <section id="t-brain" class="tab hidden"><div id="brain"></div></section>
  <section id="t-rnd" class="tab hidden"><div id="rnd"></div></section>
  <section id="t-office" class="tab hidden"><div id="office"></div></section>

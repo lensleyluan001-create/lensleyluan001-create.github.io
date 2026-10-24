@@ -193,24 +193,24 @@ function render(){const d=S.d,P=d.pulse.pairs;const h=d.health;const tAge=tickAg
  $('#eng').textContent=`engine ${d.pulse.engine_version} #${d.pulse.engine_hash}`;strip(d);detect(d);
  if(S.on('overview'))window.rsKpis?.(d); if(S.on('overview')&&once('cards',ORD.map(p=>[P[p].last,P[p].score,P[p].verdict,P[p].layers]))){$('#cards').innerHTML=ORD.map(p=>card(P[p])).join('');}
  if(S.on('settings')&&$('#raw').closest('details').open)$('#raw').innerHTML=`<table><tr><th>COIN</th><th>RSI15</th><th>ROC6h</th><th>ATR15</th><th>VOL×</th><th>BOOK</th><th>SPREAD</th><th>TREND</th><th>MOM</th><th>STOP</th><th>T1</th></tr>${ORD.map(p=>{const u=P[p],m=u.metrics;return `<tr><td>${NAME[p]}</td><td>${m.rsi15}</td><td>${m.roc6h_pct}%</td><td>${m.atr15_pct}%</td><td>${m.vol_ratio}</td><td>${m.book_imb}</td><td>${m.spread_bps}bp</td><td>${m.trend}</td><td>${m.momentum}</td><td>${fmt(u.stop,dp(u.stop))}</td><td>${fmt(u.t1,dp(u.t1))}</td></tr>`}).join('')}</table>`;
- if(S.on('engine'))renderEngine();if(window.OS)(S.subs||[]).forEach(x=>OS.update(x));if(S.on('bot'))renderBot(d);
+ if(S.on('engine'))renderEngine();if(window.OS){(S.subs||[]).forEach(x=>OS.update(x));if(!S.on('engine')&&(S.on('guards')||S.on('rebuild')))OS.update('engine');}if(S.on('bot'))renderBot(d);
  const tape=ORD.map(p=>{const u=P[p];return `<span>${NAME[p]} <b class="${u.change24_pct>=0?'up':'dn'}">${fmt(u.last,dp(u.last))} ${u.change24_pct>=0?'+':''}${fmt(u.change24_pct)}%</b> · pulse ${u.score.toFixed(1)} ${u.verdict.replace('_',' ')}</span>`}).join('');
  if(once('tape',tape))$('#tape').innerHTML=tape+tape;}
 function clock(){$('#clock').textContent=new Date(Date.now()+SAST*1000).toISOString().slice(11,19)+' SAST';const a=S.lastOk?Math.round((Date.now()-S.lastOk)/1000):null,b=$('#badge'),st=a==null||a>300?'off':a>60?'stale':'live';
  b.className='badge '+st;b.textContent=st==='live'?'● LIVE · Kraken':st==='stale'?'● STALE':'● OFFLINE';$('#age').textContent=a==null?'':`${a}s old`;}
 // DECLUTTER (staging 2026-10-24): 5 top-level tabs, each a group of the old sections (renderers unchanged). Old routes redirect.
-const GROUPS={money:['overview','proof'],machines:['bot'],research:['research','lab','rnd'],markets:['charts','markets','engine'],settings:['settings']};
-const ALIAS={overview:'money',proof:'money',bot:'machines',office:'machines',rnd:'research',lab:'research',brain:'research',charts:'markets',engine:'markets'};
+// PLACEMENT (staging 2026-10-24): each panel on the tab where it is used. Brain+guards+retired -> Machines; rebuild candidates -> Research Lab; market view -> Markets.
+const GROUPS={money:['overview','proof'],machines:['bot','guards','retired'],research:['research','lab','rebuild','rnd'],markets:['charts','engine','markets','mview'],settings:['settings']};
+const ALIAS={overview:'money',proof:'money',bot:'machines',office:'machines',rnd:'research',lab:'research',brain:'machines',charts:'markets',engine:'markets'};
 S.on=x=>(S.subs||[]).includes(x);S.floor=false;S.brainOn=false;
 function go(t){if(t==='office')S.floor=true;if(t==='brain')S.brainOn=true;const g=GROUPS[t]?t:(ALIAS[t]||'money');S.tab=g;
- S.subs=GROUPS[g].slice();if(g==='machines'&&S.floor)S.subs.push('office');if(g==='research'&&S.brainOn)S.subs.push('brain');
+ S.subs=GROUPS[g].slice();if(g==='machines'&&S.floor)S.subs.push('office');if(g==='machines'&&S.brainOn)S.subs.splice(1,0,'brain');
  document.querySelectorAll('#tabs a').forEach(a=>{const on=a.dataset.t===g;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
- document.querySelectorAll('main>.tab').forEach(s=>{const k=s.id.slice(2),i=S.subs.indexOf(k);s.classList.toggle('hidden',i<0&&!(k==='toggles'&&(g==='machines'||g==='research')));s.style.order=k==='toggles'?50:i;});
+ document.querySelectorAll('main>.tab').forEach(s=>{const k=s.id.slice(2),i=S.subs.indexOf(k);s.classList.toggle('hidden',i<0&&!(k==='toggles'&&g==='machines'));s.style.order=k==='toggles'?50:i;});
  toggles(g);history.replaceState(null,'',(g==='money'?'/':'/'+g)+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};
- const on=S.on;if(on('charts'))charts(true);['markets','proof','engine'].filter(on).forEach(x=>loadOS().then(m=>m.show(x)));if(on('brain'))import('/brain.js').then(m=>m.show());if(on('bot'))import('/squad.js').then(m=>m.showBots());if(on('rnd'))import('/rnd.js').then(m=>m.show());if(on('office'))import('/office.js').then(m=>m.show());if(on('lab'))import('/lab.js').then(m=>m.show());if(on('research'))import('/research.js').then(m=>m.show());if(on('markets'))S.idxAt=0;if(on('settings'))settingsMove();if(S.d){render();if(on('markets'))tick();}}
-function toggles(g){const el=$('#t-toggles');if(g==='machines')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgFloor">${S.floor?'Hide':'Show'} 3D floor view (heavier)</button> <span class="dim small">same bots as the board above, drawn as an office</span></div>`;
- else if(g==='research')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgBrain">${S.brainOn?'Hide':'Show'} brain map &amp; lessons (heavier)</button> <span class="dim small">verdicts, lessons and the neural log</span></div>`;else el.innerHTML='';
- const f=$('#tgFloor'),b=$('#tgBrain');if(f)f.onclick=()=>{S.floor=!S.floor;go('machines');};if(b)b.onclick=()=>{S.brainOn=!S.brainOn;go('research');};}
+ const on=S.on;if(on('charts'))charts(true);['markets','proof','engine'].filter(on).forEach(x=>loadOS().then(m=>m.show(x)));if(on('guards')||on('rebuild'))loadOS().then(m=>m.show('engine'));if(on('brain'))import('/brain.js').then(m=>m.show());if(on('bot'))import('/squad.js').then(m=>m.showBots());if(on('rnd'))import('/rnd.js').then(m=>m.show());if(on('office'))import('/office.js').then(m=>m.show());if(on('lab'))import('/lab.js').then(m=>m.show());if(on('research'))import('/research.js').then(m=>m.show());if(on('markets'))S.idxAt=0;if(on('settings'))settingsMove();if(S.d){render();if(on('markets'))tick();}}
+function toggles(g){const el=$('#t-toggles');if(g==='machines')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgFloor">${S.floor?'Hide':'Show'} 3D floor view (heavier)</button> <span class="dim small">same bots as the board above, drawn as an office</span> <button class="ibtn wide" id="tgBrain">${S.brainOn?'Hide':'Show'} brain map &amp; lessons (heavier)</button> <span class="dim small">the bots' brain: verdicts, lessons, neural log</span></div>`;else el.innerHTML='';
+ const f=$('#tgFloor'),b=$('#tgBrain');if(f)f.onclick=()=>{S.floor=!S.floor;go('machines');};if(b)b.onclick=()=>{S.brainOn=!S.brainOn;go('machines');};}
 function settingsMove(){const c=$('#setCtl');if(c&&!c.dataset.m){c.dataset.m=1;['snd','notify'].forEach(id=>{const e=document.getElementById(id);if(e)c.append(e);});const d=$('#raw')?.closest('details');if(d){$('#setRaw').append(d);d.open=true;}}}
 $('#tabs').onclick=e=>{const a=e.target.closest('a[data-t]');if(!a)return;e.preventDefault();go(a.dataset.t);};
 $('#help').onclick=()=>$('#guide').showModal();$('#gclose').onclick=()=>{$('#guide').close();localStorage.setItem('nl_seen','1');};
@@ -228,3 +228,15 @@ if(Q.get('events')){let i=0;const ev=[['XBTUSD','🟢','DEMO: bot opened paper B
 fetch('/api/lab?key=summary').then(r=>r.ok?r.json():null).then(j=>{if(j?.usdzar?.rates?.ZAR){ZAR=j.usdzar.rates.ZAR;window.ZAR_DATE=j.usdzar.date;}curBtn();});
 function curBtn(){$('#cur').textContent=CUR==='ZAR'?(ZAR?'ZAR R':'ZAR (no rate)'):'USD $';$('#cur').title=ZAR?`USD/ZAR ${ZAR} (ECB via Frankfurter, ${window.ZAR_DATE})`:'ZAR rate unavailable';}
 $('#cur').onclick=()=>{CUR=CUR==='USD'?'ZAR':'USD';localStorage.setItem('nl_cur',CUR);curBtn();S.keys={};if(S.d)render();if(window.OS)(S.subs||[]).forEach(x=>OS.update(x,true));};
+
+// PLACEMENT mirror (staging): #learn stays the single renderer (hidden); its blocks are shown where they are used. Market View moves from R&D to Markets; R&D's duplicate Paper Squad is hidden (it lives on Machines).
+(function(){const cut=(el)=>{const out=[];let cur=null;[...el.children].forEach(n=>{if(n.classList&&n.classList.contains('ph')){cur={t:(n.innerText||n.textContent).trim().toUpperCase(),n:[]};out.push(cur);}if(cur)cur.n.push(n.outerHTML);});return out;};
+ const pl=()=>{const L=document.getElementById('learn');if(!L||!L.innerHTML)return;const P=[...L.querySelectorAll('.panel')];let g='',r='',rb='';
+  P.forEach(p=>cut(p).forEach(b=>{const h=b.n.join('');if(/^NEWS GUARD/.test(b.t))g+=h;else if(/^REBUILD/.test(b.t))rb+=h;else if(/^LEARNING LOOP|^LESSONS|^RISK FUEL/.test(b.t))r+=h;}));
+  const fuelSvg=L.querySelector('svg');
+  const set=(id,h)=>{const e=document.getElementById(id);if(e&&e.dataset.h!==h){e.dataset.h=h;e.innerHTML=h;}};
+  set('plGuards',g?`<div class="panel"><div class="dim small" style="margin-bottom:6px">BOT GUARDS · news pauses for the bots</div>${g}</div>`:'');
+  set('plRetired',r?`<div class="panel">${r}</div>`:'');set('plRebuild',rb?`<div class="panel">${rb}</div>`:'');};
+ const mv=()=>{const R=document.getElementById('rnd'),M=document.getElementById('plMview');if(!R||!M)return;R.querySelectorAll('.panel').forEach(p=>{const h=p.querySelector('.ph');const t=h?(h.innerText||h.textContent).trim().toUpperCase():'';if(t.startsWith('MARKET VIEW')&&!M.contains(p)){M.innerHTML='';M.append(p);}if(t.startsWith('PAPER SQUAD'))p.style.display='none';});};
+ const ob=new MutationObserver(()=>{pl();mv();});const st=()=>{['learn','rnd'].forEach(id=>{const e=document.getElementById(id);if(e)ob.observe(e,{childList:true,subtree:true});});pl();mv();};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',st);else st();})();
