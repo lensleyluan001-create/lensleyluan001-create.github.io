@@ -48,7 +48,7 @@ function wire(d){const BL=d?.blocks||BL_DEF,root=document.getElementById('ideala
  root.querySelector('#lbDl').onclick=()=>{const s=spec(),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(s,null,1)],{type:'application/json'}));a.download=s.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);};
  draw();}
 export async function show(){const el=document.getElementById('idealab');if(!el)return;if(!el.innerHTML)el.innerHTML='<div class="panel"><div class="dim small">loading the Idea Lab…</div></div>';
- D=await load();const d=D,I=d?.ideas||[],S=d?.slots||{},F=d?.forward||{};
+ D=await load();const d=D,I=d?.ideas||[],S=d?.slots||{},F=d?.forward||{};if(d){window.NL_RC=window.NL_RC||{};NL_RC['idea-lab']={n:I.length,u:'idea',ts:d.updated_sast||null};dispatchEvent(new Event('nl-rc'));}
  if(!blocks.length)blocks=[{type:'ema_trend',params:{n:50}},{type:'rsi',params:{n:14,lo:30,hi:70,mode:'reversal'}}];
  el.innerHTML=`<div class="panel"><div class="row"><span class="ban">■ IDEA LAB · PAPER ONLY · NO AI CALLS</span><span class="dim small">${d?`updated ${esc(d.updated_sast)} SAST`:'no lab data yet (sign in, or the box has not published the lab row)'}</span></div>
  <p class="dim small">Ideas are backtested on the box by a plain script on Kraken Futures candles. Gate: ${esc(d?.gates||'OOS n ≥ 30 and mean − 3SE > 0 after 0.62% costs')}. Every idea gets its own bot slot and at least 48h of forward paper trading before any verdict. The backtest is shown for information only; it is never a pass or a fail.</p>

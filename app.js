@@ -262,15 +262,18 @@ function LZ(id,fn){const el=document.getElementById(id);if(!el)return fn();if(el
  const CH={};const $$=s=>[...document.querySelectorAll(s)];const tm=t=>t?new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Johannesburg'}):'—';
  const els=s=>s.sel.flatMap(q=>$$(q));
  const fix=()=>{const w=document.getElementById('rnW'),g=document.getElementById('rn-grad');if(w&&g&&!document.getElementById('rn-workers')){const p=document.createElement('div');p.id='rn-workers';p.className='panel';g.after(p);p.append(w);}const sq=document.getElementById('rnSq');if(sq)sq.style.display='none';};
- const stat=s=>{const E=els(s);const txt=E.map(e=>e.textContent||'').join(' ');if(!E.length||!txt.trim())return 'loading…';
+ const RCs=s=>{const c=(window.NL_RC||{})[s.k];if(!c||c.n==null)return null;const n=Number(c.n);return n.toLocaleString('en-US')+' '+(n===1?c.u:c.u.replace(/^variant tested$/,'variants tested').replace(/^(?!variants tested$)(.*\w)$/,'$1s'));};
+ const pub=s=>{const c=(window.NL_RC||{})[s.k];return c&&c.ts?String(c.ts).replace('T',' ').slice(0,16):null;};
+ const stat=s=>{const x=RCs(s);if(x)return x;const E=els(s);const txt=E.map(e=>e.textContent||'').join(' ');if(!E.length||!txt.trim())return 'loading…';
   if(s.k==='idea-lab'){const n=$$('#idealab .lb-i').length;return n+' idea'+(n===1?'':'s');}
   const n=E.reduce((a,e)=>a+e.querySelectorAll('tr:not(:first-child),li,.rn-card,.bs-c,.lb-i').length,0);
   if(n)return n+' item'+(n===1?'':'s');return /building:|not published|no .* yet|sign in/i.test(txt)?'waiting for data':'ready · open to read';};
  const home=()=>{const h=document.getElementById('rhome');if(!h)return;const q=(document.getElementById('rsQ')||{}).value||'';
-  const tiles=SEC.filter(s=>!q||(s.n+' '+s.d+' '+els(s).map(e=>e.textContent).join(' ')).toLowerCase().includes(q.toLowerCase())).map(s=>`<a class="rs-tile panel" href="/research/${s.k}" data-rs="${s.k}"><b>${s.n}</b><span class="dim small">${s.d}</span><span class="rs-c">${stat(s)}</span><span class="dim small">changed ${tm(CH[s.k])} SAST</span></a>`).join('')||'<p class="dim small">No section matches.</p>';
+  const tiles=SEC.filter(s=>!q||(s.n+' '+s.d+' '+els(s).map(e=>e.textContent).join(' ')).toLowerCase().includes(q.toLowerCase())).map(s=>`<a class="rs-tile panel" href="/research/${s.k}" data-rs="${s.k}"><b>${s.n}</b><span class="dim small">${s.d}</span><span class="rs-c">${stat(s)}</span><span class="dim small">${pub(s)?'data published '+pub(s)+' SAST':'changed '+tm(CH[s.k])+' SAST'}</span></a>`).join('')||'<p class="dim small">No section matches.</p>';
+  const lp=SEC.map(pub).filter(Boolean).sort().pop();const pe=document.getElementById('rsPub');if(pe)pe.textContent=lp?'data published '+lp+' SAST':'';
   const g=document.getElementById('rsGrid');if(g&&g.dataset.h!==tiles){g.dataset.h=tiles;g.innerHTML=tiles;}};
  const apply=()=>{fix();const rs=window.RS||'home',cur=SEC.find(s=>s.k===rs);const h=document.getElementById('rhome');if(!h)return;
-  if(!h.dataset.init){h.dataset.init=1;h.innerHTML=`<div id="rsHead"></div><div id="rsHome"><div class="panel"><div class="ph"><b>RESEARCH LAB</b><span class="dim small">tap a section · paper only</span></div><input id="rsQ" type="search" placeholder="Filter sections…" aria-label="Filter sections" style="width:100%;max-width:360px"></div><div id="rsGrid" class="rs-grid"></div></div>`;
+  if(!h.dataset.init){h.dataset.init=1;h.innerHTML=`<div id="rsHead"></div><div id="rsHome"><div class="panel"><div class="ph"><b>RESEARCH LAB</b><span class="dim small">tap a section · paper only · <span id="rsPub"></span></span></div><input id="rsQ" type="search" placeholder="Filter sections…" aria-label="Filter sections" style="width:100%;max-width:360px"></div><div id="rsGrid" class="rs-grid"></div></div>`;
    document.getElementById('rsQ').oninput=home;h.addEventListener('click',e=>{if(e.target.closest('[data-rsback]')){e.preventDefault();if(history.state&&history.state.rs)history.back();else open('home');return;}const t=e.target.closest('[data-rs]');if(!t)return;e.preventDefault();open(t.dataset.rs);});}
   const all=SEC.flatMap(els);all.forEach(e=>e.style.display='none');
   if(cur){els(cur).forEach(e=>e.style.display='');if(cur.k==='pipeline'||cur.k==='workers'){const r=document.getElementById('t-rnd');if(r)r.style.display='';}
@@ -279,7 +282,7 @@ function LZ(id,fn){const el=document.getElementById(id);if(!el)return fn();if(el
   else{const r=document.getElementById('t-rnd');if(r)r.style.display='';const H2=document.getElementById('rsHead');H2.innerHTML='';H2.dataset.h='';document.getElementById('rsHome').style.display='';home();}
   };
  function open(k){window.RS=k;history.pushState({rs:k},'',k==='home'?'/research':'/research/'+k);apply();scrollTo(0,0);}
- window.RSapply=apply;
+ window.RSapply=apply;addEventListener('nl-rc',()=>{if(window.S&&window.S.tab==='research'&&(window.RS||'home')==='home')home();});
  addEventListener('popstate',()=>{const pp=location.pathname.split('/').filter(Boolean);if(pp[0]==='research'){window.RS=pp[1]||'home';if(window.S&&window.S.tab!=='research')go('research');else apply();}else go(pp[0]||'overview');});
  const ob=new MutationObserver(ms=>{let hit=false;for(const m of ms){const n=m.target.nodeType===1?m.target:m.target.parentElement;if(!n||n.closest('#rhome'))continue;hit=true;for(const s of SEC)if(s.sel.some(q=>n.closest(q)))CH[s.k]=Date.now();}if(hit&&window.S&&window.S.tab==='research')apply();});
  const st=()=>{['t-rnd','t-research','t-lab','t-rebuild'].forEach(i=>{const e=document.getElementById(i);if(e)ob.observe(e,{childList:true,subtree:true,characterData:true});});if(window.S&&window.S.tab==='research')apply();};
