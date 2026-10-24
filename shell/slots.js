@@ -9,3 +9,6 @@ const ids=d=>Array.isArray(d?.bots)?d.bots.map(x=>x?.id).filter(Boolean):d?.bots
 export async function slotStatus(sb=window.NL_HB?.scoreboard,indie=window.NL_HB?.indie){if(!sb?.bots)return null;const R=await rows(),last={};
  const mark=(id,t)=>{if(t>(last[id]||0))last[id]=t;};for(const k of ROWS){const d=R[k];if(d)for(const id of ids(d))mark(id,t2(d.updated_sast));}if(indie)for(const id of ids(indie))mark(id,t2(indie.updated_sast));
  const out={active:[],idle:[],retired:[]},now=Date.now();for(const [id,v] of Object.entries(sb.bots)){const t=last[id]||0,o={id,v,last:t};if(v?.status==='RETIRED')out.retired.push(o);else if(t&&now-t<3600e3)out.active.push(o);else out.idle.push({...o,why:t?'no tick in 60 min':'no tick source published'});}return out;}
+// the published row object for one bot (open trades etc.), or null. Read-only.
+export async function botRow(id){const R=await rows();for(const k of ROWS){const d=R[k];if(!d)continue;const b=Array.isArray(d.bots)?d.bots.find(x=>x&&x.id===id):d.bots&&typeof d.bots==='object'?d.bots[id]:null;if(b)return{row:k,updated:d.updated_sast,bot:b};}
+ const ind=window.NL_HB?.indie;const b=(ind?.bots||[]).find(x=>x&&x.id===id);return b?{row:'indie',updated:ind.updated_sast,bot:b}:null;}
