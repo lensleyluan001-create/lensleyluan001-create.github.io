@@ -200,25 +200,25 @@ function clock(){$('#clock').textContent=new Date(Date.now()+SAST*1000).toISOStr
  b.className='badge '+st;b.textContent=st==='live'?'● LIVE · Kraken':st==='stale'?'● STALE':'● OFFLINE';$('#age').textContent=a==null?'':`${a}s old`;}
 // DECLUTTER (staging 2026-10-24): 5 top-level tabs, each a group of the old sections (renderers unchanged). Old routes redirect.
 // PLACEMENT (staging 2026-10-24): each panel on the tab where it is used. Brain+guards+retired -> Machines; rebuild candidates -> Research Lab; market view -> Markets.
-const GROUPS={money:['overview','proof'],machines:['bot','guards','retired'],research:['research','lab','rebuild','rnd'],markets:['charts','engine','markets','mview'],settings:['settings']};
+const GROUPS={money:['overview','proof'],machines:['bot','guards','brain','office','retired'],research:['rhome','research','lab','rebuild','rnd'],markets:['charts','engine','markets','mview'],settings:['settings']};
 const ALIAS={overview:'money',proof:'money',bot:'machines',office:'machines',rnd:'research',lab:'research',brain:'machines',charts:'markets',engine:'markets'};
 S.on=x=>(S.subs||[]).includes(x);S.floor=false;S.brainOn=false;
 function go(t){if(t==='office')S.floor=true;if(t==='brain')S.brainOn=true;const g=GROUPS[t]?t:(ALIAS[t]||'money');S.tab=g;
- S.subs=GROUPS[g].slice();if(g==='machines'&&S.floor)S.subs.push('office');if(g==='machines'&&S.brainOn)S.subs.splice(1,0,'brain');
+ S.subs=GROUPS[g].slice();
  document.querySelectorAll('#tabs a').forEach(a=>{const on=a.dataset.t===g;a.classList.toggle('on',on);if(on)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
- document.querySelectorAll('main>.tab').forEach(s=>{const k=s.id.slice(2),i=S.subs.indexOf(k);s.classList.toggle('hidden',i<0&&!(k==='toggles'&&g==='machines'));s.style.order=k==='toggles'?50:i;});
- toggles(g);history.replaceState(null,'',(g==='money'?'/':'/'+g)+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};
- const on=S.on;if(on('charts'))charts(true);['markets','proof','engine'].filter(on).forEach(x=>loadOS().then(m=>m.show(x)));if(on('guards')||on('rebuild'))loadOS().then(m=>m.show('engine'));if(on('brain'))import('/brain.js').then(m=>m.show());if(on('bot'))import('/squad.js').then(m=>m.showBots());if(on('rnd'))import('/rnd.js').then(m=>m.show());if(on('office'))import('/office.js').then(m=>m.show());if(on('lab'))import('/lab.js').then(m=>m.show());if(on('research'))import('/research.js').then(m=>m.show());if(on('markets'))S.idxAt=0;if(on('settings'))settingsMove();if(S.d){render();if(on('markets'))tick();}}
-function toggles(g){const el=$('#t-toggles');if(g==='machines')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgFloor">${S.floor?'Hide':'Show'} 3D floor view (heavier)</button> <span class="dim small">same bots as the board above, drawn as an office</span> <button class="ibtn wide" id="tgBrain">${S.brainOn?'Hide':'Show'} brain map &amp; lessons (heavier)</button> <span class="dim small">the bots' brain: verdicts, lessons, neural log</span></div>`;else el.innerHTML='';
+ document.querySelectorAll('main>.tab').forEach(s=>{const k=s.id.slice(2),i=S.subs.indexOf(k);s.classList.toggle('hidden',i<0&&!false);s.style.order=k==='toggles'?50:i;});
+ toggles(g);history.replaceState(null,'',(g==='money'?'/':'/'+g+(g==='research'&&window.RS&&window.RS!=='home'?'/'+window.RS:''))+location.search);S.keys={tape:S.keys.tape,strip:S.keys.strip};
+ const on=S.on;if(on('charts'))charts(true);['markets','proof','engine'].filter(on).forEach(x=>loadOS().then(m=>m.show(x)));if(on('guards')||on('rebuild'))loadOS().then(m=>m.show('engine'));if(on('brain'))LZ('t-brain',()=>import('/brain.js').then(m=>m.show()));if(on('bot'))import('/squad.js').then(m=>m.showBots());if(on('rnd'))import('/rnd.js').then(m=>m.show());if(on('office'))LZ('t-office',()=>import('/office.js').then(m=>m.show()));if(on('lab'))import('/lab.js').then(m=>m.show());if(on('research'))import('/research.js').then(m=>m.show());if(on('markets'))S.idxAt=0;if(on('settings'))settingsMove();if(S.tab==='research')setTimeout(()=>window.RSapply&&window.RSapply(),0);if(S.d){render();if(on('markets'))tick();}}
+function toggles(g){const el=$('#t-toggles');el.innerHTML='';return;if(g==='machines')el.innerHTML=`<div class="panel"><button class="ibtn wide" id="tgFloor">${S.floor?'Hide':'Show'} 3D floor view (heavier)</button> <span class="dim small">same bots as the board above, drawn as an office</span> <button class="ibtn wide" id="tgBrain">${S.brainOn?'Hide':'Show'} brain map &amp; lessons (heavier)</button> <span class="dim small">the bots' brain: verdicts, lessons, neural log</span></div>`;else el.innerHTML='';
  const f=$('#tgFloor'),b=$('#tgBrain');if(f)f.onclick=()=>{S.floor=!S.floor;go('machines');};if(b)b.onclick=()=>{S.brainOn=!S.brainOn;go('machines');};}
 function settingsMove(){const c=$('#setCtl');if(c&&!c.dataset.m){c.dataset.m=1;['snd','notify'].forEach(id=>{const e=document.getElementById(id);if(e)c.append(e);});const d=$('#raw')?.closest('details');if(d){$('#setRaw').append(d);d.open=true;}}}
-$('#tabs').onclick=e=>{const a=e.target.closest('a[data-t]');if(!a)return;e.preventDefault();go(a.dataset.t);};
+$('#tabs').onclick=e=>{const a=e.target.closest('a[data-t]');if(!a)return;e.preventDefault();if(a.dataset.t==='research')window.RS='home';go(a.dataset.t);};
 $('#help').onclick=()=>$('#guide').showModal();$('#gclose').onclick=()=>{$('#guide').close();localStorage.setItem('nl_seen','1');};
 $('#snd').onclick=()=>{S.sound=!S.sound;$('#snd').textContent=S.sound?'🔊 Sound on':'🔇 Sound off';beep(520);};
 $('#notify').onclick=async()=>{if(!('Notification'in window))return toast('Notifications not supported here. In-page alerts stay on.');S.notify=(await Notification.requestPermission())==='granted';toast(S.notify?'🔔 Alerts on (paper signals only)':'Notifications blocked. In-page alerts stay on.');};
 function toast(t){const e=document.createElement('div');e.className='toast';e.innerHTML=t;$('#toasts').appendChild(e);setTimeout(()=>e.remove(),8000);}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
-window.S=S;window.go=go;const start=location.pathname.replace(/\//g,'')||'overview';settingsMove();go(start);
+window.S=S;window.go=go;const PP=location.pathname.split('/').filter(Boolean);const start=PP[0]||'overview';window.RS=(PP[0]==='research'&&PP[1])||'home';settingsMove();go(start);
 // shared in-app links: <a data-go=tab data-sec=id> (Office card and squad have their own handlers)
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[data-go]');if(!a||a.closest('#ofCard,#botSquad'))return;e.preventDefault();go(a.dataset.go);const sec=a.dataset.sec;if(sec){let k=0;const iv=setInterval(()=>{const el=document.getElementById(sec);if(el&&el.offsetHeight){if(el.tagName==='DETAILS')el.open=true;el.scrollIntoView({block:'start',behavior:'smooth'});el.focus?.({preventScroll:true});clearInterval(iv);}else if(++k>40)clearInterval(iv);},100);}});
 if(!localStorage.getItem('nl_seen')&&!Q.has('noguide')&&!DEMO)setTimeout(()=>$('#guide').showModal(),1200);
@@ -239,4 +239,48 @@ $('#cur').onclick=()=>{CUR=CUR==='USD'?'ZAR':'USD';localStorage.setItem('nl_cur'
   set('plRetired',r?`<div class="panel">${r}</div>`:'');set('plRebuild',rb?`<div class="panel">${rb}</div>`:'');};
  const mv=()=>{const R=document.getElementById('rnd'),M=document.getElementById('plMview');if(!R||!M)return;R.querySelectorAll('.panel').forEach(p=>{const h=p.querySelector('.ph');const t=h?(h.innerText||h.textContent).trim().toUpperCase():'';if(t.startsWith('MARKET VIEW')&&!M.contains(p)){M.innerHTML='';M.append(p);}if(t.startsWith('PAPER SQUAD'))p.style.display='none';});};
  const ob=new MutationObserver(()=>{pl();mv();});const st=()=>{['learn','rnd'].forEach(id=>{const e=document.getElementById(id);if(e)ob.observe(e,{childList:true,subtree:true});});pl();mv();};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',st);else st();})();
+
+// ALWAYS-OPEN (staging 2026-10-24): every panel visible and open; heavy panels (Brain, 3D office) load when scrolled near (IntersectionObserver), never hidden.
+function LZ(id,fn){const el=document.getElementById(id);if(!el)return fn();if(el.dataset.lz==='1')return fn();if(!('IntersectionObserver' in window)){el.dataset.lz='1';return fn();}
+ if(!el.firstElementChild||!el.firstElementChild.innerHTML)el.firstElementChild&&(el.firstElementChild.innerHTML='<div class="panel dim small">loading when you scroll here…</div>');
+ const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){io.disconnect();el.dataset.lz='1';fn();}},{rootMargin:'400px 0px'});io.observe(el);}
+(function(){const KEEP=d=>{const s=d.querySelector('summary');const t=s?(s.textContent||''):'';return /raw/i.test(t)||d.classList.contains('bs-c')||d.closest('.bs-c')||d.classList.contains('lb-i')||d.classList.contains('rn-tg');};
+ const op=root=>{(root.matches&&root.matches('details')?[root]:[]).concat([...(root.querySelectorAll?root.querySelectorAll('details'):[])]).forEach(d=>{if(!d.dataset.ao){d.dataset.ao=1;if(!KEEP(d))d.open=true;}});};
+ const st=()=>{const m=document.querySelector('main');if(!m)return;op(m);new MutationObserver(ms=>ms.forEach(x=>x.addedNodes.forEach(n=>n.nodeType===1&&op(n)))).observe(m,{childList:true,subtree:true});};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',st);else st();})();
+
+// RESEARCH SECTIONS (staging 2026-10-24): Research Lab home = tiles; each tile opens one section view (/research/<slug>, pushState, Back + breadcrumb). Display only; renderers unchanged.
+(function(){const SEC=[
+ {k:'pipeline',n:'Pipeline',d:'IDEA → LAB → BRAIN → BOT → PROVEN',sel:['#rnd .rn-hero','#rn-grad']},
+ {k:'research-engine',n:'Research Engine + Reel Check',d:'sweeps, extracted rules, reel verdicts',sel:['#t-research']},
+ {k:'idea-lab',n:'Idea Lab',d:'ideas, idea board, verdicts',sel:['#t-lab','#rn-ideas']},
+ {k:'test-bench',n:'Test Bench',d:'strict backtests, run requests, tools',sel:['#rn-bench','#rn-tools']},
+ {k:'workers',n:'Workers',d:'R&D worker bots and what they are doing',sel:['#rn-workers']},
+ {k:'intel',n:'Intel + Influencer Watch',d:'independent intel bots, influencer claims',sel:['#rnIntel','#rn-infl']},
+ {k:'rebuild',n:'Rebuild Candidates',d:'strategy-lab winners for a v5 rebuild',sel:['#t-rebuild']}];
+ const CH={};const $$=s=>[...document.querySelectorAll(s)];const tm=t=>t?new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Johannesburg'}):'—';
+ const els=s=>s.sel.flatMap(q=>$$(q));
+ const fix=()=>{const w=document.getElementById('rnW'),g=document.getElementById('rn-grad');if(w&&g&&!document.getElementById('rn-workers')){const p=document.createElement('div');p.id='rn-workers';p.className='panel';g.after(p);p.append(w);}const sq=document.getElementById('rnSq');if(sq)sq.style.display='none';};
+ const stat=s=>{const E=els(s);const txt=E.map(e=>e.textContent||'').join(' ');if(!E.length||!txt.trim())return 'loading…';
+  if(s.k==='idea-lab'){const n=$$('#idealab .lb-i').length;return n+' idea'+(n===1?'':'s');}
+  const n=E.reduce((a,e)=>a+e.querySelectorAll('tr:not(:first-child),li,.rn-card,.bs-c,.lb-i').length,0);
+  if(n)return n+' item'+(n===1?'':'s');return /building:|not published|no .* yet|sign in/i.test(txt)?'waiting for data':'ready · open to read';};
+ const home=()=>{const h=document.getElementById('rhome');if(!h)return;const q=(document.getElementById('rsQ')||{}).value||'';
+  const tiles=SEC.filter(s=>!q||(s.n+' '+s.d+' '+els(s).map(e=>e.textContent).join(' ')).toLowerCase().includes(q.toLowerCase())).map(s=>`<a class="rs-tile panel" href="/research/${s.k}" data-rs="${s.k}"><b>${s.n}</b><span class="dim small">${s.d}</span><span class="rs-c">${stat(s)}</span><span class="dim small">changed ${tm(CH[s.k])} SAST</span></a>`).join('')||'<p class="dim small">No section matches.</p>';
+  const g=document.getElementById('rsGrid');if(g&&g.dataset.h!==tiles){g.dataset.h=tiles;g.innerHTML=tiles;}};
+ const apply=()=>{fix();const rs=window.RS||'home',cur=SEC.find(s=>s.k===rs);const h=document.getElementById('rhome');if(!h)return;
+  if(!h.dataset.init){h.dataset.init=1;h.innerHTML=`<div id="rsHead"></div><div id="rsHome"><div class="panel"><div class="ph"><b>RESEARCH LAB</b><span class="dim small">tap a section · paper only</span></div><input id="rsQ" type="search" placeholder="Filter sections…" aria-label="Filter sections" style="width:100%;max-width:360px"></div><div id="rsGrid" class="rs-grid"></div></div>`;
+   document.getElementById('rsQ').oninput=home;h.addEventListener('click',e=>{if(e.target.closest('[data-rsback]')){e.preventDefault();if(history.state&&history.state.rs)history.back();else open('home');return;}const t=e.target.closest('[data-rs]');if(!t)return;e.preventDefault();open(t.dataset.rs);});}
+  const all=SEC.flatMap(els);all.forEach(e=>e.style.display='none');
+  if(cur){els(cur).forEach(e=>e.style.display='');if(cur.k==='pipeline'||cur.k==='workers'){const r=document.getElementById('t-rnd');if(r)r.style.display='';}
+   if(['pipeline','idea-lab','test-bench','workers','intel'].includes(cur.k)){const r=document.getElementById('t-rnd');if(r)r.style.display='';}
+   const hh=`<div class="panel rs-crumb"><button class="ibtn" data-rsback>← Back</button> <nav aria-label="Breadcrumb" class="small"><a href="/research" data-rs="home">Research Lab</a> › <b>${cur.n}</b></nav></div>`;const H=document.getElementById('rsHead');if(H.dataset.h!==hh){H.dataset.h=hh;H.innerHTML=hh;}document.getElementById('rsHome').style.display='none';}
+  else{const r=document.getElementById('t-rnd');if(r)r.style.display='';const H2=document.getElementById('rsHead');H2.innerHTML='';H2.dataset.h='';document.getElementById('rsHome').style.display='';home();}
+  };
+ function open(k){window.RS=k;history.pushState({rs:k},'',k==='home'?'/research':'/research/'+k);apply();scrollTo(0,0);}
+ window.RSapply=apply;
+ addEventListener('popstate',()=>{const pp=location.pathname.split('/').filter(Boolean);if(pp[0]==='research'){window.RS=pp[1]||'home';if(window.S&&window.S.tab!=='research')go('research');else apply();}else go(pp[0]||'overview');});
+ const ob=new MutationObserver(ms=>{let hit=false;for(const m of ms){const n=m.target.nodeType===1?m.target:m.target.parentElement;if(!n||n.closest('#rhome'))continue;hit=true;for(const s of SEC)if(s.sel.some(q=>n.closest(q)))CH[s.k]=Date.now();}if(hit&&window.S&&window.S.tab==='research')apply();});
+ const st=()=>{['t-rnd','t-research','t-lab','t-rebuild'].forEach(i=>{const e=document.getElementById(i);if(e)ob.observe(e,{childList:true,subtree:true,characterData:true});});if(window.S&&window.S.tab==='research')apply();};
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',st);else st();})();
