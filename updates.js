@@ -1,7 +1,7 @@
 // What-happened feed (public.updates, owner-only RLS). Signed-in only; hidden when signed out or the table is missing.
 // Fetch once on open + piggybacks the existing 5-min heartbeat refresh (window.NL_UPD called from hbLoad). No own polling.
 (()=>{'use strict';
-const TABS=['overview','engine','charts','markets','bot','proof','brain','rnd','office'],SEV={info:'#6aa9ff',good:'#3ee08f',warn:'#f5b942',high:'#ff5a5a'};
+const TABS=['overview','engine','charts','markets','bot','proof','brain','rnd','office','terminal'],SEV={info:'#6aa9ff',good:'#3ee08f',warn:'#f5b942',high:'#ff5a5a'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let ROWS=null,SEEN=null,busy=false,autoShown=false,bell=null,sheet=null;
 function auth(){try{const s=window.NL_SB,a=JSON.parse(localStorage.getItem('nl_auth')||'null');return s&&a&&a.mode==='supabase'&&a.exp>Date.now()/1000+30?{s,t:a.token}:null}catch{return null}}

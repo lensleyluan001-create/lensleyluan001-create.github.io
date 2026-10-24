@@ -1,6 +1,6 @@
 // RESKIN 2026-10-22 (staging): sidebar collapse + number ticker. Display only, no data/engine logic.
 // Sidebar idea: satnaing/shadcn-admin (MIT). Number ticker idea: magicuidesign/magicui NumberTicker (MIT). Own code, no copy.
-(()=>{const IC={money:'◱',machines:'◉',research:'⚗',settings:'⚙',overview:'◱',engine:'◎',charts:'▤',markets:'◈',bot:'◉',proof:'✓',brain:'✦',rnd:'⚗',office:'▦',lab:'✎'};
+(()=>{const IC={money:'◱',machines:'◉',research:'⚗',settings:'⚙',overview:'◱',engine:'◎',charts:'▤',markets:'◈',bot:'◉',proof:'✓',brain:'✦',rnd:'⚗',office:'▦',terminal:'▣',lab:'✎'};
 const nav=document.getElementById('tabs');
 function deco(){if(!nav)return;for(const a of nav.querySelectorAll('a[data-t]')){if(a.querySelector('.rs-lb'))continue;const kb=a.querySelector('.kb');
  const txt=[...a.childNodes].filter(n=>n!==kb).map(n=>n.textContent).join('').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu,'').trim();
