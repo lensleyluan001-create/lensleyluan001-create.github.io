@@ -14,3 +14,16 @@
 .of2-crawl{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;padding-top:4px}.of2-crawl b{letter-spacing:.14em;font-size:11px}
 .of2-src{margin:6px 0}.of2 .of-card{right:10px;top:70px;left:auto}
 @media (max-width:699px){.of2 .of-card{left:8px;right:8px;top:auto;bottom:44px;width:auto}}
+/* v3 neon language (matches Terminal) */
+.of2{font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+.of2-hero{background:radial-gradient(ellipse at 50% 45%,rgba(20,90,60,.18),transparent 65%),#010403}
+.of2-hero::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 140px rgba(0,0,0,.9);z-index:1}
+.of2-lb{flex-direction:column;align-items:stretch;gap:1px;padding:0;border-radius:0;background:linear-gradient(180deg,rgba(6,22,16,.92),rgba(2,8,6,.92));border:1px solid rgba(57,255,136,.45);box-shadow:0 0 14px rgba(57,255,136,.15);font-size:9px;min-width:118px}
+.of2-lb .of3-r{display:flex;gap:5px;align-items:center;padding:1px 6px}.of2-lb .of3-r:first-child{background:linear-gradient(90deg,rgba(57,255,136,.22),rgba(57,255,136,.03));border-bottom:1px solid rgba(57,255,136,.25)}
+.of2-lb b{color:#39ff88;text-shadow:0 0 6px rgba(57,255,136,.6);font-size:9px}.of2-lb span{font-size:13px;text-shadow:0 0 8px currentColor}.of2-lb em{font-size:8.5px}
+.of2-lb .ofsk{display:block;width:100%;margin:0;padding:0 4px 2px;box-sizing:border-box}
+.of2-lb::before,.of2-lb::after{content:"";position:absolute;width:6px;height:6px;border:1px solid #39ff88}.of2-lb::before{left:-1px;top:-1px;border-right:0;border-bottom:0}.of2-lb::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
+.of2-pod,.of2-sp,.of2-hd{flex-direction:row;min-width:0;box-shadow:none;background:rgba(0,0,0,.55);border-color:transparent}.of2-pod::before,.of2-pod::after,.of2-sp::before,.of2-sp::after{display:none}
+.of2-li{border-radius:0;background:linear-gradient(180deg,rgba(6,22,16,.9),rgba(2,8,6,.9));border-color:rgba(57,255,136,.3);font-family:inherit;font-size:10px;position:relative}
+.of2-li b{text-shadow:0 0 6px rgba(57,255,136,.5)}.of2-li span{text-shadow:0 0 8px currentColor}.of3-ch{grid-column:1/4}.of3-ch .ofsk{display:block;width:100%}
+.of2 .of-card{border-radius:0;font-family:inherit;font-size:11px;border:1px solid rgba(57,255,136,.5);box-shadow:0 0 24px rgba(57,255,136,.15)}
