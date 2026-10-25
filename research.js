@@ -8,7 +8,7 @@ function tok(){try{const a=JSON.parse(localStorage.getItem('nl_auth')||'null');r
 async function sb(path,o={}){const s=window.NL_SB,t=tok();if(!s||!t)throw new Error('sign in to load research data');
  const r=await fetch(s.url+'/rest/v1/'+path,{...o,cache:'no-store',headers:{apikey:s.key,authorization:'Bearer '+t,'content-type':'application/json',...(o.headers||{})}});
  if(!r.ok)throw new Error(path.split('?')[0]+' HTTP '+r.status);const x=await r.text();return x?JSON.parse(x):null;}
-async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
+async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
  catch(e){if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){try{const r=await fetch('/research_demo.json',{cache:'no-store'});if(r.ok){R=await r.json();R.err='';return;}}catch{}}R.err=String(e.message||e);}}
 const STG=['MINED','OUT-OF-SAMPLE','48H PAPER','GATE','PROVEN'];
 function minerLanes(m){const C=m?.candidates||[];const lane=s=>C.filter(c=>c.stage===s);
@@ -65,7 +65,7 @@ function render(){const el=document.getElementById('research');if(!el)return;con
  el.innerHTML=`<div class="panel"><div class="row"><span class="ban">■ RESEARCH · PRE-MOVE MINER · PAPER ONLY</span><span class="dim small">${R.err?esc(R.err):`updated ${esc(R.research?.updated_sast||'—')} SAST`}</span></div>
  <p class="small">${m?`<b>${num(m.variants_tried)}</b> variants mined on 2024–2025, <b class="dn">${num(m.in_sample_pass)} passed</b> the multiple-testing penalty. The top 3 were preregistered (sha <code>${esc(String(m.prereg_sha||'').slice(0,16))}</code>) and tested once on 2026: <b class="dn">${num(m.survivors)} survived</b>. Nothing goes to paper.`:'miner results not published yet'}</p>${minerLanes(m)}</div>
  <div class="panel"><div class="row"><span class="ban">■ 24/7 VOLATILITY SCANNER</span></div>${scanner(R.research?.scanner)}</div>
- <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel">${engine(R.research_engine)}</div>`;
+ <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}</div><div class="panel">${engine(R.research_engine)}</div>`;
  const sh=(R.intel?.events||[]).find(e=>e.shock);if(sh&&sh.ts+sh.text!==lastEv){lastEv=sh.ts+sh.text;document.getElementById('rsIntel')?.classList.add('rs-pulse');setTimeout(()=>document.getElementById('rsIntel')?.classList.remove('rs-pulse'),2500);}
  wire();}
 async function job(type,input){const m=document.getElementById('rsMsg');try{await sb('run_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({idea_ref:'rq:'+type,title:String(input).slice(0,300)})});if(m)m.textContent='queued: the box picks it up within ~10s';setTimeout(tick,1500);}
@@ -79,3 +79,22 @@ async function tick(){if(document.hidden||document.getElementById('t-research')?
  if(busy)return;busy=true;try{await load();const f=document.activeElement?.id==='rsIn'?document.getElementById('rsIn').value:null;render();if(f!=null){const i=document.getElementById('rsIn');i.value=f;i.focus();}}finally{busy=false;}}
 export async function show(){const el=document.getElementById('research');if(!el)return;if(!el.innerHTML)el.innerHTML='<div class="panel"><div class="dim small">loading research…</div></div>';
  await tick();if(!T){T=setInterval(tick,10000);setInterval(ages,1000);}}
+
+// 2026-10-25 Lulu Dev (Alex): RISK LAB + Path to $10k (bot_state 'risk_lab', owner token). PAPER ONLY, never live. Equity = heartbeat paper_equity_usd, else the row's paper equity.
+function risklab(d){const ban='<div class="row"><span class="ban">■ RISK LAB · PAPER ONLY · NEVER LIVE</span>';
+ if(!d)return ban+'</div><div class="dim small">Not published yet (sign in, or the box job has not written its first row).</div>';
+ const hb=window.NL_HB?.heartbeat,eq=Number.isFinite(+hb?.paper_equity_usd)?+hb.paper_equity_usd:d.path?.equity_usd,src=Number.isFinite(+hb?.paper_equity_usd)?'heartbeat':'risk_lab row';
+ const L=d.path?.levels||[1000,2500,5000,10000],usd=v=>v==null?'—':'$'+Number(v).toLocaleString('en-US',{maximumFractionDigits:2}),sw=d.sweep||{};
+ const lv=L.map((v,i)=>{const lo=i?L[i-1]:0,pct=eq==null?0:Math.max(0,Math.min(100,(eq-lo)/(v-lo)*100));return `<div class="rs-co"><div class="small dim">LEVEL ${i+1}</div><b class="${eq>=v?'up':''}">${usd(v)} ${eq>=v?'✔':''}</b><div style="height:6px;background:#223;border-radius:3px;margin-top:4px"><i style="display:block;height:6px;width:${pct}%;background:${eq>=v?'#2c6':'#4af'};border-radius:3px"></i></div></div>`;}).join('');
+ const inp=Object.entries(d.inputs||{}).map(([k,v])=>`${esc(k.replace('PULSE:','').replace('STRAT:',''))} <b>${v.n_backfill}</b>bf/<b>${v.n_forward}</b>fwd`).join(' · ');
+ const pass=(d.passed||[]).map(r=>`<tr><td>${esc(r.id)}</td><td>${r.test.n} (${r.test.n_backfill} bf / ${r.test.n_forward} fwd)</td><td>${(r.sizing?.expectancy_pct||[]).map(x=>x+'%').join(' · ')}</td><td>${(r.sizing?.usd_per_day||[]).map(usd).join(' · ')}</td><td>${(r.sizing?.days_to_10k||[]).map(x=>x??'never').join(' · ')}</td><td>${usd(r.sizing?.max_drawdown_usd_test)}</td></tr>`).join('');
+ const best=(d.best_oos||[]).slice(0,5).map(r=>`<tr><td>${esc(r.id)}</td><td>${r.train.n} (${r.train.n_backfill}/${r.train.n_forward})</td><td>${r.train.mean_pct}%</td><td>${r.test.n} (${r.test.n_backfill}/${r.test.n_forward})</td><td>${r.test.mean_pct}%</td><td>${r.oos_lb_bonf_pct}%</td><td>${r.passed?'PASS':'fail'}</td></tr>`).join('');
+ const sl=(d.slots||[]).map(x=>`${esc(x.slot)} ${esc(x.status)} n${x.fwd_n}`).join(' · ')||'none (nothing passed)';
+ return ban+`<span class="dim small">updated ${esc(d.updated_sast)} SAST</span></div>
+ <div class="small"><b>PATH TO $10K</b> · paper equity <b>${usd(eq)}</b> <span class="dim">(${src})</span> · next level ${usd(d.path?.next_level)}</div><div class="rs-ig">${lv}</div>
+ <div class="rs-ig"><div class="rs-co"><div class="small dim">SWEEP</div><b>${num(sw.size)} configs</b><div class="small dim">Bonferroni α ${sw.bonferroni_alpha?.toExponential(2)} · z ${esc(sw.z)}</div></div>
+ <div class="rs-co"><div class="small dim">PASSED (OOS LB &gt; 0 after fees)</div><b class="${d.n_passed?'up':''}">${d.n_passed}</b></div><div class="rs-co"><div class="small dim">PAPER SLOTS</div><b>${esc(sl)}</b><div class="small dim">caps $${esc(d.caps?.collateral_usd)}/trade · ${esc(d.caps?.max_open)} opens</div></div></div>
+ <div class="small dim">Inputs (n≥30, backfill / forward): ${inp}</div>
+ ${pass?`<table class="small"><tr><th>CONFIG</th><th>OOS n</th><th>expectancy lo·mid·hi</th><th>$/day lo·mid·hi</th><th>days to $10k fast·mid·slow</th><th>max DD</th></tr>${pass}</table>`:'<div class="small"><b>0 configs pass.</b> Nothing is promoted.</div>'}
+ <div class="small dim">Closest to passing (holdout n ≥ 10, ranked by OOS Bonferroni lower bound):</div><div style="overflow:auto"><table class="small"><tr><th>CONFIG</th><th>train n (bf/fwd)</th><th>train mean</th><th>test n (bf/fwd)</th><th>test mean</th><th>LB bonf</th><th></th></tr>${best}</table></div>
+ <div class="small dim">${esc(sw.rule)} · ${esc(sw.split)} · ${(d.notes||[]).map(esc).join(' · ')}</div>`;}
