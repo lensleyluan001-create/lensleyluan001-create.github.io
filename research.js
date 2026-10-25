@@ -8,7 +8,7 @@ function tok(){try{const a=JSON.parse(localStorage.getItem('nl_auth')||'null');r
 async function sb(path,o={}){const s=window.NL_SB,t=tok();if(!s||!t)throw new Error('sign in to load research data');
  const r=await fetch(s.url+'/rest/v1/'+path,{...o,cache:'no-store',headers:{apikey:s.key,authorization:'Bearer '+t,'content-type':'application/json',...(o.headers||{})}});
  if(!r.ok)throw new Error(path.split('?')[0]+' HTTP '+r.status);const x=await r.text();return x?JSON.parse(x):null;}
-async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
+async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab,postmortem)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
  catch(e){if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){try{const r=await fetch('/research_demo.json',{cache:'no-store'});if(r.ok){R=await r.json();R.err='';return;}}catch{}}R.err=String(e.message||e);}}
 const STG=['MINED','OUT-OF-SAMPLE','48H PAPER','GATE','PROVEN'];
 function minerLanes(m){const C=m?.candidates||[];const lane=s=>C.filter(c=>c.stage===s);
@@ -65,7 +65,7 @@ function render(){const el=document.getElementById('research');if(!el)return;con
  el.innerHTML=`<div class="panel"><div class="row"><span class="ban">■ RESEARCH · PRE-MOVE MINER · PAPER ONLY</span><span class="dim small">${R.err?esc(R.err):`updated ${esc(R.research?.updated_sast||'—')} SAST`}</span></div>
  <p class="small">${m?`<b>${num(m.variants_tried)}</b> variants mined on 2024–2025, <b class="dn">${num(m.in_sample_pass)} passed</b> the multiple-testing penalty. The top 3 were preregistered (sha <code>${esc(String(m.prereg_sha||'').slice(0,16))}</code>) and tested once on 2026: <b class="dn">${num(m.survivors)} survived</b>. Nothing goes to paper.`:'miner results not published yet'}</p>${minerLanes(m)}</div>
  <div class="panel"><div class="row"><span class="ban">■ 24/7 VOLATILITY SCANNER</span></div>${scanner(R.research?.scanner)}</div>
- <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}</div><div class="panel">${engine(R.research_engine)}</div>`;
+ <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}</div><div class="panel" id="rsWhy">${whywon(R.postmortem)}</div><div class="panel">${engine(R.research_engine)}</div>`;
  const sh=(R.intel?.events||[]).find(e=>e.shock);if(sh&&sh.ts+sh.text!==lastEv){lastEv=sh.ts+sh.text;document.getElementById('rsIntel')?.classList.add('rs-pulse');setTimeout(()=>document.getElementById('rsIntel')?.classList.remove('rs-pulse'),2500);}
  wire();}
 async function job(type,input){const m=document.getElementById('rsMsg');try{await sb('run_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({idea_ref:'rq:'+type,title:String(input).slice(0,300)})});if(m)m.textContent='queued: the box picks it up within ~10s';setTimeout(tick,1500);}
@@ -98,3 +98,15 @@ function risklab(d){const ban='<div class="row"><span class="ban">■ RISK LAB �
  ${pass?`<table class="small"><tr><th>CONFIG</th><th>OOS n</th><th>expectancy lo·mid·hi</th><th>$/day lo·mid·hi</th><th>days to $10k fast·mid·slow</th><th>max DD</th></tr>${pass}</table>`:'<div class="small"><b>0 configs pass.</b> Nothing is promoted.</div>'}
  <div class="small dim">Closest to passing (holdout n ≥ 10, ranked by OOS Bonferroni lower bound):</div><div style="overflow:auto"><table class="small"><tr><th>CONFIG</th><th>train n (bf/fwd)</th><th>train mean</th><th>test n (bf/fwd)</th><th>test mean</th><th>LB bonf</th><th></th></tr>${best}</table></div>
  <div class="small dim">${esc(sw.rule)} · ${esc(sw.split)} · ${(d.notes||[]).map(esc).join(' · ')}</div>`;}
+
+// 2026-10-25 Lulu Dev (Alex): 'Why it won' feed (bot_state 'postmortem', owner token). Associations from paper trades only; nothing trades on it.
+function whywon(d){const ban='<div class="row"><span class="ban">■ WHY IT WON · TRADE POST-MORTEM · PAPER</span>';
+ if(!d)return ban+'</div><div class="dim small">Not published yet (sign in, or the box job has not written its first row).</div>';
+ const pc1=v=>v==null?'—':(v*100).toFixed(0)+'%',few=(d.closed_trades||0)<30;
+ const card=t=>`<div class="rs-co"><div class="small dim">${esc(t.regime)} regime</div><b>${esc(t.feature)} = ${esc(t.value)}</b><div class="small"><b class="up">${t.wins} wins</b> · <b class="dn">${t.losses} losses</b> · win rate ${pc1(t.win_rate_with)}</div><div class="small dim">in ${pc1(t.share_in_winners)} of winners vs ${pc1(t.share_in_losers)} of losers · p ${(+t.p_one_sided).toExponential(1)}</div></div>`;
+ const R=d.by_regime||{};
+ return ban+`<span class="dim small">updated ${esc(d.updated_sast)} SAST</span></div>
+ <div class="small">${d.closed_trades} closed trades (${d.full} full / ${d.partial} partial) · ${d.wins} wins / ${d.losses} losses · regimes: ${['trending','ranging','shifting','unknown'].map(k=>`${k} ${R[k]?.n??0}`).join(' · ')}</div>
+ ${few?'<div class="small"><b>Not enough trades</b> (under 30 closed).</div>':(d.flagged||[]).length?`<div class="rs-ig">${d.flagged.map(card).join('')}</div>`:'<div class="small"><b>0 patterns flagged.</b></div>'}
+ <div class="small dim">${esc(d.flag_rule)} · ${d.tests} tests, Bonferroni α ${d.bonferroni_alpha?(+d.bonferroni_alpha).toExponential(2):'—'}. Associations, not causes; partial rows are backfilled from logs.</div>
+ <div class="small dim">Regime rule: ${esc(d.regime_rule)}</div>`;}
