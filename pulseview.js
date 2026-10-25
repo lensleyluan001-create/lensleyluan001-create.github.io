@@ -20,7 +20,7 @@ export async function show(coin,pair){const el=host();if(!el)return;window.__pvL
  if(!covered){el.innerHTML=`<div class="ph"><b class="c">◈ PULSE ENGINE VIEW</b><span class="dim small">${esc(coin)}</span></div><div class="pv-nc"><div class="pv-nc-i">⊘</div><div><b>${esc(coin)} is not covered by the engine.</b><br><span class="dim">The pulse engine (hash cb3ed0d29ecbe129) only scores its ${Object.keys(C.pairs).length} configured pairs (${Object.values(C.pairs).map(x=>esc(x.label.split('/')[0])).join(', ')}). Nothing is computed for ${esc(coin)} rather than faked. The chart above is Kraken spot price only.</span></div></div>`;LAST='';return;}
 
  let P=window.S?.d?.pulse?.pairs?.[pair];if(!P){try{P=(await (await fetch('/api/pulse')).json()).pairs?.[pair];}catch{}}
- if(window.__pvLast?.coin!==coin)return;render({coin,pair,covered,P,C});}
+ if(window.__pvLast?.coin!==coin)return;render({coin,pair,covered,P,C});learnBox(pair);}
 function render(o){if(!o||!o.covered)return;const el=host();if(!el)return;const {coin,P,C}=o;if(!P||!C){LAST='';el.innerHTML='<div class="ph"><b class="c">◈ PULSE ENGINE VIEW</b></div><div class="dim small">waiting for the engine reading…</div>';return;}
  window.__pvLast=o;const key=JSON.stringify([coin,P.computed_at,P.score,[...OPEN]]);if(key===LAST)return;LAST=key;
  const M=P.metrics||{},N=C.normalise,L=C.layers,W=C.weights,V=C.verdict,I=C.indicators,Ly=P.layers||{};
@@ -47,3 +47,25 @@ function render(o){if(!o||!o.covered)return;const el=host();if(!el)return;const 
  ${step('score',6,'Score','engine '+f(P.score,1)+(fac!==1?' (×'+fac+' no direction)':''),`<div class="pv-kv"><span>Σ weighted × 100</span><b>${f(raw*100,1)}</b><span>no-direction factor</span><b>×${fac}</b><span>rebuilt from rounded readings</span><b>${f(est,1)}</b><span>engine's own score</span><b>${f(P.score,1)}</b></div><div class="small dim">The engine's number is the one that counts; small gaps come from rounding in the published readings.</div>`)}
  ${step('dec',7,'Decision',esc(P.verdict),`<div class="pv-kv"><span>TAKE needs</span><b>a direction, score ≥ ${V.take_min}${V.take_requires_all_layers?' and all 6 checks':''}</b><span>WATCH</span><b>score ≥ ${V.watch_min}</b><span>result</span><b class="${vc}">${esc(P.verdict)}</b>${P.direction!=='none'?`<span>engine stop / target 1</span><b>${f(P.stop,6)} / ${f(P.t1,6)}</b>`:''}</div>`)}
  </div>`;}
+
+// 2026-10-25 Lulu Dev (Alex, Lulu Boss approved): PULSE LEARNING LOOP, owner-gated (bot_state 'pulse_learn', owner token, same pattern as Office/Research).
+// Box job pulse_learn/learn.py replays the unchanged engine read-only; shadow weights are report-only and never applied. Paper only. Read at most every 5 min.
+function plTok(){try{const a=JSON.parse(localStorage.getItem('nl_auth')||'null');return a&&a.mode==='supabase'&&a.exp>Date.now()/1000+30?a.token:null;}catch{return null;}}
+let PL=null,PLat=0;
+async function plLoad(){const s=window.NL_SB,t=plTok();if(!s||!t)return null;if(PL&&Date.now()-PLat<300000)return PL;
+ try{const r=await fetch(s.url+'/rest/v1/bot_state?select=id,data&id=eq.pulse_learn',{cache:'no-store',headers:{apikey:s.key,Authorization:'Bearer '+t}});if(!r.ok)return null;const j=await r.json();PL=j?.[0]?.data||null;PLat=Date.now();return PL;}catch{return null;}}
+const pc=v=>v==null?'—':(v*100).toFixed(1)+'%';
+async function learnBox(pair){const pv=document.getElementById('pvBox');if(!pv)return;let el=document.getElementById('plBox');if(!el){el=document.createElement('div');el.id='plBox';el.className='panel pv';pv.after(el);}
+ const head='<div class="ph"><b class="c">◈ PULSE LEARNING LOOP</b><span class="dim small">owner only · paper · shadow weights never applied</span></div>';
+ if(!plTok()){el.innerHTML=head+'<div class="dim small">Sign in as owner to see the learning-loop stats.</div>';return;}
+ const d=await plLoad();if(!d){el.innerHTML=head+'<div class="dim small">no pulse_learn row yet</div>';return;}
+ const T=d.overall?.test?.['4h_taker']||{},Lv=d.overall?.live?.['4h_taker']||{},sh=d.shadow||{},bk=d.backfill||{};
+ const rows=Object.entries(d.by_pair_dir_test||{}).map(([k,v])=>{const x=v['4h_taker']||{},m=v['4h_maker']||{},[p,dr]=k.split(':');return `<tr${p===pair?' style="font-weight:700"':''}><td>${esc(p)}</td><td>${esc(dr)}</td><td>${x.n??0}</td><td>${pc(x.hit)}</td><td>${pc(x.wilson_lb)}</td><td>${x.avg_net_pct==null?'—':(+x.avg_net_pct).toFixed(2)+'%'}</td><td>${pc(m.hit)}</td><td><b>${esc(x.grade)}</b></td></tr>`;}).join('');
+ const fl=(d.flags_recent||[]).slice(0,6).map(x=>`<span class="${x.flag==='TAKE'?'pv-ok':'pv-no'}">${esc(x.pair)} ${esc(x.direction)} ${esc(x.time_sast)} ${esc(x.source)} → ${esc(x.flag)}</span>`).join(' · ');
+ const st=(o)=>o?`n ${o.n} · hit ${pc(o.hit)} · avg net ${o.avg_net_pct==null?'—':(+o.avg_net_pct).toFixed(2)+'%'}`:'—';
+ el.innerHTML=head+`<div class="small dim">updated ${esc(d.updated_sast)} SAST · engine #${esc(d.engine_hash)} · ${esc(d.definition)}</div>
+ <div class="pv-kv"><span>backfill spikes</span><b>${bk.n_spikes??'—'} (${esc(bk.from_sast)} → ${esc(bk.to_sast)})</b><span>train / test (chronological)</span><b>${d.split?.train_n} / ${d.split?.test_n} · cut ${esc(d.split?.cut_sast)}</b>
+ <span>out-of-sample 4h taker</span><b>${st(T)} · ${esc(T.grade)}</b><span>live forward rows (separate)</span><b>${d.live?.n_spikes??0} · ${st(Lv)}</b>
+ <span>shadow vs fixed (test, report only)</span><b>fixed ${st(sh.test?.fixed)} | shadow ${st(sh.test?.shadow)} → ${sh.shadow_wins_oos?'shadow wins':'fixed holds'}</b></div>
+ <div style="overflow:auto"><table class="small"><tr><th>PAIR</th><th>DIR</th><th>n test</th><th>hit 4h taker</th><th>Wilson LB</th><th>avg net</th><th>hit maker</th><th>grade</th></tr>${rows}</table></div>
+ <div class="small">${fl||''}</div><div class="small dim">${esc(d.grade_rule)}. Limits: ${(bk.limits||[]).map(esc).join(' · ')}</div>`;}
