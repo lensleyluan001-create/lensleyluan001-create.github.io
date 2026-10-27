@@ -8,7 +8,7 @@ import {
 	Vector2,
 	Vector3,
 	WebGLRenderTarget
-} from '/vendor/three.module.min.js?v=942ede908c';
+} from '/vendor/three.module.min.js?v=30a9bc36af';
 import { Pass, FullScreenQuad } from './Pass.js';
 import { CopyShader } from '../shaders/CopyShader.js';
 import { LuminosityHighPassShader } from '../shaders/LuminosityHighPassShader.js';

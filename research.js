@@ -8,7 +8,7 @@ function tok(){try{const a=JSON.parse(localStorage.getItem('nl_auth')||'null');r
 async function sb(path,o={}){const s=window.NL_SB,t=tok();if(!s||!t)throw new Error('sign in to load research data');
  const r=await fetch(s.url+'/rest/v1/'+path,{...o,cache:'no-store',headers:{apikey:s.key,authorization:'Bearer '+t,'content-type':'application/json',...(o.headers||{})}});
  if(!r.ok)throw new Error(path.split('?')[0]+' HTTP '+r.status);const x=await r.text();return x?JSON.parse(x):null;}
-async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab,postmortem,bot_fills,maker_lab)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
+async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab,postmortem,bot_fills,maker_lab,mt5_lab)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
  catch(e){if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){try{const r=await fetch('/research_demo.json',{cache:'no-store'});if(r.ok){R=await r.json();R.err='';return;}}catch{}}R.err=String(e.message||e);}}
 const STG=['MINED','OUT-OF-SAMPLE','48H PAPER','GATE','PROVEN'];
 function minerLanes(m){const C=m?.candidates||[];const lane=s=>C.filter(c=>c.stage===s);
@@ -65,7 +65,7 @@ function render(){const el=document.getElementById('research');if(!el)return;con
  el.innerHTML=`<div class="panel"><div class="row"><span class="ban">■ RESEARCH · PRE-MOVE MINER · PAPER ONLY</span><span class="dim small">${R.err?esc(R.err):`updated ${esc(R.research?.updated_sast||'—')} SAST`}</span></div>
  <p class="small">${m?`<b>${num(m.variants_tried)}</b> variants mined on 2024–2025, <b class="dn">${num(m.in_sample_pass)} passed</b> the multiple-testing penalty. The top 3 were preregistered (sha <code>${esc(String(m.prereg_sha||'').slice(0,16))}</code>) and tested once on 2026: <b class="dn">${num(m.survivors)} survived</b>. Nothing goes to paper.`:'miner results not published yet'}</p>${minerLanes(m)}</div>
  <div class="panel"><div class="row"><span class="ban">■ 24/7 VOLATILITY SCANNER</span></div>${scanner(R.research?.scanner)}</div>
- <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}${feedrag(R.maker_lab)}</div><div class="panel" id="rsMaker">${makerlab(R.maker_lab)}</div><div class="panel" id="rsWhy">${whywon(R.postmortem)}</div><div class="panel" id="rsMoves">${moves(R.bot_fills)}</div><div class="panel">${engine(R.research_engine)}</div>`;
+ <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}${feedrag(R.maker_lab)}</div><div class="panel" id="rsMaker">${makerlab(R.maker_lab)}</div><div class="panel" id="rsMt5">${mt5lab(R.mt5_lab)}</div><div class="panel" id="rsWhy">${whywon(R.postmortem)}</div><div class="panel" id="rsMoves">${moves(R.bot_fills)}</div><div class="panel">${engine(R.research_engine)}</div>`;
  const sh=(R.intel?.events||[]).find(e=>e.shock);if(sh&&sh.ts+sh.text!==lastEv){lastEv=sh.ts+sh.text;document.getElementById('rsIntel')?.classList.add('rs-pulse');setTimeout(()=>document.getElementById('rsIntel')?.classList.remove('rs-pulse'),2500);}
  wire();}
 async function job(type,input){const m=document.getElementById('rsMsg');try{await sb('run_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({idea_ref:'rq:'+type,title:String(input).slice(0,300)})});if(m)m.textContent='queued: the box picks it up within ~10s';setTimeout(tick,1500);}
@@ -135,3 +135,20 @@ function makerlab(d){const ban='<div class="row"><span class="ban">■ MAKER-FIL
  <div class="small">maker ${esc(d.fee_rt_pct)}% round trip · ${num(d.M)} configs · Bonferroni z ${esc(d.z_bonf)} · <b class="${d.n_passed?'up':'r'}">${d.n_passed} pass</b>${d.n_passed?'':' — nothing passes at maker fees'}</div>
  <div style="overflow:auto"><table class="small"><tr><th>FAMILY</th><th></th><th>configs</th><th>≥3× fee</th><th>fill rate</th><th>best by OOS LB (holdout n≥10)</th><th>OOS n</th><th>OOS avg net</th><th>LB bonf</th></tr>${t}</table></div>
  <div class="small dim">${esc(d.rules)}</div><div class="small dim">Not replayable: ${(d.not_replayable||[]).map(esc).join(' · ')}</div>`;}
+
+// 2026-10-27 Lulu Dev (Alex relayed Luan): MT5 DEMO LAB (bot_state 'mt5_lab', owner token). Results of box_jobs test jobs only (bots write rules, jobs test). DEMO ONLY, NOT PROVEN, display only.
+function mt5lab(d){const ban='<div class="row"><span class="ban">■ MT5 DEMO LAB · NOT PROVEN · DEMO ONLY · NEVER LIVE</span>';
+ if(!d)return ban+'</div><div class="dim small">Not published yet.</div>';
+ const f=v=>v==null?'—':(+v).toFixed(2),pc=v=>v==null?'—':(100*v).toFixed(1)+'%',vc=v=>/^PASS/.test(v||'')?'up':'r';
+ const tr=(d.tracker||[]).map(s=>`<tr><td>${esc(s.slot)}</td><td>${esc(s.rule_id)}</td><td>${esc(s.market)}</td><td>${s.n}/${s.target}</td><td>${pc(s.win_rate)} <span class="dim">vs ${pc(s.breakeven)}</span></td><td class="${s.net_R>=0?'up':'r'}">${f(s.net_R)}</td><td>${pc(s.wilson_lb)}</td><td>${esc(s.status)} · ${esc(s.label)}</td></tr>`).join('');
+ const R=d.runner||{},rows=(R.rows||[]).slice(0,40).map(r=>`<tr><td>${esc(r.id)}</td><td>${esc(r.mk)}</td><td class="dim">${esc(r.cell?JSON.stringify(r.cell):'')}</td><td>${r.n}</td><td>${pc(r.wr)} <span class="dim">vs ${pc(r.be)}</span></td><td class="${r.R>=0?'up':'r'}">${f(r.R)}</td><td>${pc(r.lb)}</td><td>${f(r.isR)}</td><td class="${vc(r.v)}">${esc(r.v)}${r.retire?' · hit −15R':''}</td><td class="${vc(r.strict)}">${esc(r.strict||'')}${r.mR!=null?' · '+f(r.mR)+'R/tr':''}</td></tr>`).join('');
+ const sp=d.spikes||{},br=Object.entries(sp.base_rate||{}).map(([k,v])=>`${esc(k)} ${v.spikes} (${v.per_week}/wk, ${v.up}↑ ${v.down}↓)`).join(' · ');
+ const jb=Object.entries(d.jobs||{}).map(([k,v])=>`<span class="${v.rc===0||v.off?'':'r'}">${esc(k)} ${v.off?'(disabled)':esc(v.last||'never')}${v.rc!=null&&v.rc!==0?' rc '+v.rc:''}</span>`).join(' · ');
+ return ban+`<span class="dim small">updated ${esc(d.updated_sast)} SAST</span></div>
+ <div class="small"><b>FORWARD SLOTS</b> (count starts 2 Nov · 1:2 TP:SL · retire at −15R · pass = Wilson LB &gt; 33.3% and net R &gt; 0 at n=50)</div>
+ <div style="overflow:auto"><table class="small"><tr><th>slot</th><th>rule</th><th>market</th><th>entries</th><th>win rate</th><th>net R</th><th>LB</th><th>status</th></tr>${tr}</table></div>
+ <div class="small"><b>BACKTESTS</b> · ${esc(R.generated||'not run yet')} · ${R.m_total??'—'} tests (z ${esc(R.z_batch??'—')}) · rule gate: <b>${R.pass||0}</b> rows / ${R.cell_pass??'—'} grid cells pass · <b class="${R.strict_pass?'up':'r'}">strict (mean-R LB&gt;0): ${R.strict_pass??'—'}</b> · best cell per rule × market, OOS · grid WR passes come from time-stop wins, not edge</div>
+ <div style="overflow:auto;max-height:420px"><table class="small"><tr><th>rule</th><th>mkt</th><th>cell</th><th>OOS n</th><th>win rate</th><th>net R</th><th>LB bonf</th><th>IS R</th><th>verdict (rule gate)</th><th>strict (mean-R LB&gt;0)</th></tr>${rows}</table></div>
+ <div class="small dim">Skipped: ${(R.skipped||[]).map(x=>esc(x.join(': '))).join(' · ')||'none'}</div>
+ <div class="small"><b>SPIKE LIBRARY</b> ${esc(sp.definition||'')} · ${sp.total??'—'} spikes · ${br}</div>
+ <div class="small dim">Jobs: ${jb}</div>`;}
