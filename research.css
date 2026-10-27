@@ -34,3 +34,9 @@
 .rs-q{padding:4px 0;border-bottom:1px dashed var(--ln)}.rs-q.failed b{color:var(--r)}.rs-q.done b{color:var(--g)}.rs-q.running b{color:var(--c)}
 @media (max-width:720px){.rs-eg{grid-template-columns:1fr}.rs-lanes,.rs-lanes.six{grid-template-columns:repeat(6,160px)}}
 @media (prefers-reduced-motion:reduce){.rs-card.slide,.rs-ev,.rs-ring,#rsIntel.rs-pulse,.rs-brain.on .rs-core{animation:none}}
+
+/* 2026-10-27 BOT MOVES terminal grid: static, no animation (light on mobile) */
+.mv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:6px}
+.mv-c{background:#000;border:1px solid #0a3d1a;border-radius:4px;padding:6px 8px;font-family:ui-monospace,Menlo,Consolas,monospace;color:#33ff66;font-size:12px;line-height:1.35}
+.mv-id{color:#1fae4a;font-size:10px;letter-spacing:.06em}.mv-a{font-weight:700}.mv-m{color:#1fae4a;font-size:10px}
+.mv-up{color:#33ff66}.mv-dn{color:#ff5c5c}.mv-last{border-color:#33ff66;box-shadow:0 0 0 1px #33ff66 inset}.mv-last .mv-id b{color:#33ff66}
