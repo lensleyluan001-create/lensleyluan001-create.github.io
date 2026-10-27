@@ -8,7 +8,7 @@ import {
 	AgXToneMapping,
 	ACESFilmicToneMapping,
 	SRGBTransfer
-} from '/vendor/three.module.min.js?v=c9a1f8ffaf';
+} from '/vendor/three.module.min.js?v=e4026a3916';
 import { Pass, FullScreenQuad } from './Pass.js';
 import { OutputShader } from '../shaders/OutputShader.js';
 
