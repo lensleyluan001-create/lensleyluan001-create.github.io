@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*secret*
+*credentials*
+.vercel/
+node_modules/
+*.map
