@@ -8,7 +8,7 @@ function tok(){try{const a=JSON.parse(localStorage.getItem('nl_auth')||'null');r
 async function sb(path,o={}){const s=window.NL_SB,t=tok();if(!s||!t)throw new Error('sign in to load research data');
  const r=await fetch(s.url+'/rest/v1/'+path,{...o,cache:'no-store',headers:{apikey:s.key,authorization:'Bearer '+t,'content-type':'application/json',...(o.headers||{})}});
  if(!r.ok)throw new Error(path.split('?')[0]+' HTTP '+r.status);const x=await r.text();return x?JSON.parse(x):null;}
-async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab,postmortem,bot_fills)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
+async function load(){try{const j=await sb('bot_state?select=id,data&id=in.(research,intel,research_engine,absorption,risk_lab,postmortem,bot_fills,maker_lab)');const o={};for(const x of j||[])if(x&&x.id)o[x.id]=x.data;R=o;R.err='';}
  catch(e){if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname)){try{const r=await fetch('/research_demo.json',{cache:'no-store'});if(r.ok){R=await r.json();R.err='';return;}}catch{}}R.err=String(e.message||e);}}
 const STG=['MINED','OUT-OF-SAMPLE','48H PAPER','GATE','PROVEN'];
 function minerLanes(m){const C=m?.candidates||[];const lane=s=>C.filter(c=>c.stage===s);
@@ -65,7 +65,7 @@ function render(){const el=document.getElementById('research');if(!el)return;con
  el.innerHTML=`<div class="panel"><div class="row"><span class="ban">■ RESEARCH · PRE-MOVE MINER · PAPER ONLY</span><span class="dim small">${R.err?esc(R.err):`updated ${esc(R.research?.updated_sast||'—')} SAST`}</span></div>
  <p class="small">${m?`<b>${num(m.variants_tried)}</b> variants mined on 2024–2025, <b class="dn">${num(m.in_sample_pass)} passed</b> the multiple-testing penalty. The top 3 were preregistered (sha <code>${esc(String(m.prereg_sha||'').slice(0,16))}</code>) and tested once on 2026: <b class="dn">${num(m.survivors)} survived</b>. Nothing goes to paper.`:'miner results not published yet'}</p>${minerLanes(m)}</div>
  <div class="panel"><div class="row"><span class="ban">■ 24/7 VOLATILITY SCANNER</span></div>${scanner(R.research?.scanner)}</div>
- <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}</div><div class="panel" id="rsWhy">${whywon(R.postmortem)}</div><div class="panel" id="rsMoves">${moves(R.bot_fills)}</div><div class="panel">${engine(R.research_engine)}</div>`;
+ <div class="panel" id="rsIntel">${intel(R.intel)}</div><div class="panel" id="rsAbsorb">${absorb(R.absorption)}</div><div class="panel" id="rsRisk">${risklab(R.risk_lab)}${feedrag(R.maker_lab)}</div><div class="panel" id="rsMaker">${makerlab(R.maker_lab)}</div><div class="panel" id="rsWhy">${whywon(R.postmortem)}</div><div class="panel" id="rsMoves">${moves(R.bot_fills)}</div><div class="panel">${engine(R.research_engine)}</div>`;
  const sh=(R.intel?.events||[]).find(e=>e.shock);if(sh&&sh.ts+sh.text!==lastEv){lastEv=sh.ts+sh.text;document.getElementById('rsIntel')?.classList.add('rs-pulse');setTimeout(()=>document.getElementById('rsIntel')?.classList.remove('rs-pulse'),2500);}
  wire();}
 async function job(type,input){const m=document.getElementById('rsMsg');try{await sb('run_requests',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({idea_ref:'rq:'+type,title:String(input).slice(0,300)})});if(m)m.textContent='queued: the box picks it up within ~10s';setTimeout(tick,1500);}
@@ -120,3 +120,18 @@ function moves(d){const ban='<div class="row"><span class="ban">■ BOT MOVES ·
  const top=L[0]?.[0];
  return ban+`<span class="dim small">updated ${esc(d.updated_sast)} SAST · ${L.length} bots</span></div>
  <div class="mv-grid">${L.map(([id,f])=>`<div class="mv-c${id===top?' mv-last':''}"><div class="mv-id">${esc(id)}${id===top?' <b>· LAST MOVE</b>':''}</div><div class="mv-a">${esc(id)} ${esc(act(f))} ${esc(coin(f.pair))}</div><div class="mv-m">${esc(String(f.time_sast||'').slice(5,16))}${f.pnl_usd!=null?` · <span class="${f.pnl_usd>=0?'mv-up':'mv-dn'}">${f.pnl_usd>=0?'+':'-'}$${Math.abs(+f.pnl_usd).toFixed(2)}</span>`:''}${f.why?' · '+esc(f.why):''}</div></div>`).join('')}</div>`;}
+
+// 2026-10-27 Lulu Dev (Alex relayed Luan): MAKER-FILL sweep + fee-drag line (bot_state 'maker_lab', owner token). PAPER ONLY, display only.
+function feedrag(d){const f=d?.fee_drag;if(!f||!(f.series||[]).length)return '<div class="small dim">Fee drag: not published yet.</div>';
+ const S=f.series,W=320,Hh=70,vals=S.flatMap(p=>[p.fees,p.gross]),mx=Math.max(...vals,0),mn=Math.min(...vals,0),y=v=>(Hh-4-(v-mn)/((mx-mn)||1)*(Hh-8)).toFixed(1),x=i=>(i/Math.max(1,S.length-1)*W).toFixed(1);
+ const pl=k=>S.map((p,i)=>x(i)+','+y(p[k])).join(' ');
+ return `<div class="small"><b>FEE DRAG</b> · real paper fills (${f.fills}) · fees paid <b class="r">$${f.fees_usd}</b> vs gross P&amp;L <b class="${f.gross_usd>=0?'up':'r'}">$${f.gross_usd}</b> · net $${f.net_usd}</div>
+ <svg viewBox="0 0 ${W} ${Hh}" width="100%" height="${Hh}" role="img" aria-label="cumulative fees vs gross P&L"><line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#334"/><polyline fill="none" stroke="#f66" stroke-width="1.5" points="${pl('fees')}"/><polyline fill="none" stroke="#4af" stroke-width="1.5" points="${pl('gross')}"/></svg>
+ <div class="small dim"><span style="color:#f66">■</span> cumulative fees · <span style="color:#4af">■</span> cumulative gross P&amp;L · ${esc(f.source)}</div>`;}
+function makerlab(d){const ban='<div class="row"><span class="ban">■ MAKER-FILL SWEEP · PAPER ONLY · NEVER LIVE</span>';
+ if(!d)return ban+'</div><div class="dim small">Not published yet.</div>';
+ const t=(d.table||[]).map(r=>`<tr><td>${esc(r.family)}</td><td class="${r.verdict==='PASS'?'up':'r'}">${esc(r.verdict)}</td><td>${r.configs}</td><td>${r.eligible_3x}</td><td>${r.fill_rate}</td><td>${esc(r.best?.id||'—')}</td><td>${r.best?.oos_n??'—'}</td><td>${r.best?.oos_mean_net_pct??'—'}%</td><td>${r.best?.oos_lb_bonf_pct??'—'}%</td></tr>`).join('');
+ return ban+`<span class="dim small">updated ${esc(d.updated_sast)} SAST</span></div>
+ <div class="small">maker ${esc(d.fee_rt_pct)}% round trip · ${num(d.M)} configs · Bonferroni z ${esc(d.z_bonf)} · <b class="${d.n_passed?'up':'r'}">${d.n_passed} pass</b>${d.n_passed?'':' — nothing passes at maker fees'}</div>
+ <div style="overflow:auto"><table class="small"><tr><th>FAMILY</th><th></th><th>configs</th><th>≥3× fee</th><th>fill rate</th><th>best by OOS LB (holdout n≥10)</th><th>OOS n</th><th>OOS avg net</th><th>LB bonf</th></tr>${t}</table></div>
+ <div class="small dim">${esc(d.rules)}</div><div class="small dim">Not replayable: ${(d.not_replayable||[]).map(esc).join(' · ')}</div>`;}

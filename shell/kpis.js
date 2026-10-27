@@ -20,7 +20,7 @@ function draw(){const S=window.S;if(!S||!S.on('overview')||!S.d)return;const el=
  const wins=[];let w=0,n=0;for(const t of tr){n++;if(t.pnl_usd>0)w++;wins.push(w/n*100);}
  const H=st.pulse_history||[],best=H.map(h=>Math.max(...Object.values(h.scores||{}).filter(v=>v!=null))),bestNow=Math.max(...Object.values(P).map(p=>p.score).filter(v=>v!=null));
  const bp=Object.values(P).reduce((a,p)=>!a||p.score>a.score?p:a,null);
- if(window.NL_HB?.scoreboard&&Date.now()-SLat>60000){SLat=Date.now();import('/shell/slots.js?v=37abcd6929').then(m=>m.slotStatus()).then(r=>{SL=r;LAST=null;draw();}).catch(()=>{});}
+ if(window.NL_HB?.scoreboard&&Date.now()-SLat>60000){SLat=Date.now();import('/shell/slots.js?v=942ede908c').then(m=>m.slotStatus()).then(r=>{SL=r;LAST=null;draw();}).catch(()=>{});}
  const SBB=window.NL_HB?.scoreboard?.bots||{},live=Object.entries(SBB).filter(([k,b])=>b&&b.status!=='RETIRED'&&b.balance!=null),tot=live.reduce((a,[,b])=>a+ +b.balance,0),st1=live.length*1000,tch=st1?(tot/st1-1)*100:0,v5r=SBB.v5?.status==='RETIRED',v5o=(ch.open_positions||[]).length;
  el.innerHTML=`
  <div class="rk-c"><span class="rk-l">Total paper equity · ${SL?`${SL.active.length} active · ${SL.idle.length} paused/idle · ${SL.retired.length} retired`:`${live.length} non-retired slots`}</span><b class="rk-v num">${live.length?$m(tot):'—'}</b><span class="rk-sub ${tch>=0?'up':'dn'}">${live.length?(tch>=0?'+':'')+tch.toFixed(2)+'% vs '+$m(st1)+' start':'scoreboard not loaded'}</span><span class="rk-f">sum of the ${live.length} non-retired slots that publish a balance (scoreboard row)${v5r?` · <span class="dim">v5 retired, closing ${v5o} open trade${v5o===1?'':'s'} (${$m(eq)})</span>`:''}</span></div>
