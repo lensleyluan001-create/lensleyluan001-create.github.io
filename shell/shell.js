@@ -43,14 +43,17 @@ function intro(done){
 // lands in the existing #access_token handler) with the EXISTING public key only. Owner = SHA-256 of Luan's email, compared client-side for UI only;
 // real enforcement is RLS on auth.jwt()->>'email'. Google button stays hidden until the project's public /auth/v1/settings reports google enabled
 // AND GOOGLE_FLAG is not 'off'. The owner one-time link (box) keeps working unchanged as a fallback.
-const OWNER_H='80b93f5a18b594b914e4769d2e2d5b6e41ef7c9a9dedb1fb5a7dbf10bc6c66de',GOOGLE_FLAG='auto';let SBC=null;
+// 2026-10-28 Lulu Dev (Alex): 6-digit email code (verify type 'email') + allowlist. DB gate = before-user-created hook (only the allowlisted email can be created); client rejects + signs out any other email.
+const OWNERS=['80b93f5a18b594b914e4769d2e2d5b6e41ef7c9a9dedb1fb5a7dbf10bc6c66de','9979841105691cd10505a9979a2b6536142076c861a22b178d5c9d170c792d19'];
+const OWNER_H=OWNERS[0],GOOGLE_FLAG='auto';let SBC=null;
 function sbLib(){return SBC??=new Promise((ok,no)=>{if(window.supabase?.createClient)return ok(window.supabase);const sc=document.createElement('script');sc.src='/vendor/supabase-js-2.109.0.umd.js';sc.onload=()=>ok(window.supabase);sc.onerror=no;document.head.append(sc);})
  .then(L=>L.createClient(SB.url,SB.key,{auth:{flowType:'implicit',persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}));}
 async function ownerCheck(){try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t?.email)return false;const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(t.email).trim().toLowerCase()));
- const hx=[...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');const o=hx===OWNER_H;document.body.classList.toggle('nl-owner',o);window.NL_OWNER=o;return o;}catch{return false;}}
+ const hx=[...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');const o=OWNERS.includes(hx);document.body.classList.toggle('nl-owner',o);window.NL_OWNER=o;return o;}catch{return false;}}
 async function googleOn(){if(GOOGLE_FLAG==='off')return false;try{const r=await fetch(AU+'/settings',{headers:{apikey:SB.key}});return r.ok&&!!(await r.json())?.external?.google;}catch{return false;}}
 function saveTok(j){const p=JSON.parse(atob(j.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));LS.setItem(TK,JSON.stringify({mode:'supabase',token:j.access_token,refresh:j.refresh_token,exp:p.exp,email:p.email,sub:p.sub}));}
-function fromHash(){const at=hash.get('access_token');if(!at)return false;saveTok({access_token:at,refresh_token:hash.get('refresh_token')});ownerCheck();history.replaceState(null,'',location.pathname+location.search);return true;}
+async function gate(){if(await ownerCheck())return true;LS.removeItem(TK);try{await fetch(AU+'/logout',{method:'POST',headers:{apikey:SB.key}});}catch{}return false;}
+function fromHash(){const at=hash.get('access_token');if(!at)return false;saveTok({access_token:at,refresh_token:hash.get('refresh_token')});gate().then(o=>{if(!o)location.reload();});history.replaceState(null,'',location.pathname+location.search);return true;}
 async function refresh(){try{const t=JSON.parse(LS.getItem(TK)||'null');if(!t?.refresh||t.mode!=='supabase')return false;const r=await fetch(AU+'/token?grant_type=refresh_token',{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({refresh_token:t.refresh})});if(!r.ok)return false;saveTok(await r.json());return true;}catch{return false;}}
 const PENDING='Invite pending: this email has no confirmed invite yet. Open the invite email from Supabase first, then come back and request a sign-in link.';
 function login(done){
@@ -68,25 +71,32 @@ function login(done){
   </div>
   <div class="honest"><b>Honest status:</b> paper trading only, no live money. The bot is learning and no strategy is proven yet. This is a research desk, not financial advice.</div>
  </div>
- <form class="lg-card" id="lgForm" autocomplete="on"><h2>Sign in</h2><div class="sub" id="lgSub">Invite-only. Owner access. We email you a one-time sign-in link.</div>
+ <form class="lg-card" id="lgForm" autocomplete="on"><h2>Sign in</h2><div class="sub" id="lgSub">Owner access only. We email you a 6-digit code that works on any device (the email's link also works on the device you open it on).</div>
   <div id="lgEmailRow"><label for="lgEmail">Email</label><input id="lgEmail" type="email" autocomplete="username" required></div>
-  <button class="nlbtn pri" type="submit" id="lgGo">Email me a sign-in link</button>
-  <button class="nlbtn hidden" type="button" id="lgGoogle">Continue with Google</button>
+  <div id="lgCodeRow" class="hidden"><label for="lgCode">6-digit code</label><input id="lgCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></div>
+  <button class="nlbtn pri" type="submit" id="lgGo">Email me a code</button>
+  <button class="nlbtn hidden" type="button" id="lgVerify">Sign in with code</button>
+  <button class="nlbtn hidden" type="button" id="lgGoogle">Sign in with Google</button><div class="lg-foot" id="lgGoogleOff">Sign in with Google: not set up yet</div>
   <div class="lg-msg" id="lgMsg"></div>
   <div class="lg-foot">Secured by Supabase Auth · registration by invite only</div></form></div>`);
  document.body.append(el);lock(true);
  const msg=(t,c='')=>{const m=el.querySelector('#lgMsg');m.textContent=t;m.className='lg-msg '+c;};
  if(cbErr)msg(/expired|invalid/i.test(cbErr)?'That link expired or was already used. Request a new one.':cbErr,'err');
  el.querySelector('#lgForm').onsubmit=async e=>{e.preventDefault();const email=el.querySelector('#lgEmail').value.trim();msg('Sending…');
-  try{try{const c=await sbLib();const {error}=await c.auth.signInWithOtp({email,options:{shouldCreateUser:false,emailRedirectTo:location.origin+'/'}});
-    if(!error){msg('Check your inbox: the sign-in link opens the OS on this device.','ok');return;}const t=String(error.message||'');
+  try{try{const c=await sbLib();const {error}=await c.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:location.origin+'/'}});
+    if(!error){codeUi();return;}const t=String(error.message||'');
     msg(/signup|not allowed|not found|otp_disabled|user/i.test(t)||error.status===422||error.status===400?PENDING:/rate|seconds/i.test(t)||error.status===429?'Email limit reached: Supabase\'s free mailer sends only a few emails per hour. A link may already be in your inbox (check spam); use the newest one, or try again in about an hour.':(t||'Could not send the link'),'err');return;}catch{}
-   const r=await fetch(AU+'/otp?redirect_to='+encodeURIComponent(location.origin+'/'),{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({email,create_user:false})});
-   if(r.ok){msg('Check your inbox: the sign-in link opens the OS on this device.','ok');return;}
+   const r=await fetch(AU+'/otp?redirect_to='+encodeURIComponent(location.origin+'/'),{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({email,create_user:true})});
+   if(r.ok){codeUi();return;}
    const j=await r.json().catch(()=>({}));const t=(j.msg||j.error_description||j.message||'')+'';
    msg(/signup|not allowed|not found|otp_disabled|user/i.test(t)||r.status===422||r.status===400?PENDING:/rate|seconds/i.test(t)||r.status===429?'Email limit reached: Supabase\'s free mailer sends only a few emails per hour. A link may already be in your inbox (check spam); use the newest one, or try again in about an hour.':(t||'Could not send the link'),'err');
   }catch{msg('Network error, try again','err');}};
- googleOn().then(on=>{const g=el.querySelector('#lgGoogle');if(!on||!g)return;g.classList.remove('hidden');g.onclick=async()=>{msg('Opening Google…');try{const c=await sbLib();const {error}=await c.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+'/'}});if(error)msg(String(error.message||'Google sign-in failed'),'err');}catch{msg('Google sign-in unavailable','err');}};});
+ function codeUi(){el.querySelector('#lgCodeRow').classList.remove('hidden');el.querySelector('#lgVerify').classList.remove('hidden');el.querySelector('#lgGo').textContent='Send a new code';msg('Check your inbox (and spam) for the 6-digit code, then type it here. You can also tap the link in the email.','ok');setTimeout(()=>el.querySelector('#lgCode').focus(),100);}
+ el.querySelector('#lgVerify').onclick=async()=>{const email=el.querySelector('#lgEmail').value.trim().toLowerCase(),token=el.querySelector('#lgCode').value.replace(/\D/g,'');if(token.length!==6){msg('Enter the 6-digit code from the email','err');return;}msg('Checking code…');
+  try{const r=await fetch(AU+'/verify',{method:'POST',headers:{apikey:SB.key,'content-type':'application/json'},body:JSON.stringify({type:'email',email,token})});const j=await r.json().catch(()=>({}));
+   if(!r.ok||!j.access_token){msg(/expired|invalid/i.test(j.msg||j.error_description||'')||r.status===403?'That code is wrong or expired. Send a new code.':(j.msg||'Could not verify the code'),'err');return;}
+   saveTok(j);if(!(await gate())){msg('This email is not allowed here.','err');return;}msg('Signed in.','ok');location.reload();}catch{msg('Network error, try again','err');}};
+ googleOn().then(on=>{const g=el.querySelector('#lgGoogle');if(!on||!g)return;g.classList.remove('hidden');el.querySelector('#lgGoogleOff')?.remove();g.onclick=async()=>{msg('Opening Google…');try{const c=await sbLib();const {error}=await c.auth.signInWithOAuth({provider:'google',options:{redirectTo:'https://lensleyluan001-create.github.io/'}});if(error)msg(String(error.message||'Google sign-in failed'),'err');}catch{msg('Google sign-in unavailable','err');}};});
  setTimeout(()=>el.querySelector('#lgEmail').focus(),200);
 }
 setTimeout(ownerCheck,0);
